@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -24,6 +25,7 @@ func request(url string) string{
 func get_hash(url string) map[string] []string{
 	data_str := request(url) //gan data_str = du lieu request body
 	var result map[string] []string
+	result = make(map[string] []string)
 	var md5_array [] string
 	var sha1_array [] string
 	var sha256_array [] string
@@ -41,14 +43,15 @@ func get_hash(url string) map[string] []string{
 		sha256_array = append(sha256_array, sha256_str) //them...
 
 	}
-	result["md5"] = md5_array
+	result["md5"] = md5_array //tra ve map mang md5
 	result["sha1"] = sha1_array
 	result["sha256"] = sha256_array
 	return result
 }
 
 func dump_data() map[string] map[string] []string {
-	malshare_map := make(map[string] map[string] []string)
+	var malshare_map map[string] map[string] []string
+	malshare_map = make(map[string] map[string] []string)
 	body_str := request("https://malshare.com/daily/") // gan body_str = du lieu request body url
 	host_str := "https://malshare.com/daily/"
 	magic_str := "alt=\"[DIR]\"></td><td><a href=\"" //gan magic_str bang doan string ngay trc vi tri ngay thang nam
@@ -74,9 +77,9 @@ func dump_data() map[string] map[string] []string {
 		//yyyy := date_str[0:4]
 		//mm := date_str[5:7]
 		//dd := date_str[8:10]
-		url_str := host_str + date_str + "/" + "malshare_fileList" + "." + date_str + ".all.txt"
+		url_str := host_str + date_str + "/malshare_fileList." + date_str + ".all.txt"
 		//url_str:=strings.Join([]string{str1, body_str[i+len(magic_str) : i+len(magic_str)+10]},"")
-		//fmt.Println(url_str)
+		fmt.Println(url_str)
 		hash_map := get_hash(url_str) // gan hash_map bang cac doan hash ham get_hash...
 		malshare_map[date_str] = hash_map // luu cac doan hash trong mang hash_map vao mang malshare_map ngay thang...
 		//dem=dem+1
