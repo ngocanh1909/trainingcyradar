@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -11,21 +10,26 @@ import (
 func request(url string) string{
 	resp, err := http.Get(url)
 	if err != nil{
-		log.Fatalln(err) // neu get loi thi luu vet r exit
+		return ""// neu get loi thi luu vet r exit
 	}
 	defer resp.Body.Close() // tri hoan dong body
 	body, err := ioutil.ReadAll(resp.Body) // doc du lieu request body su dung
 	if err != nil{
-		log.Fatalln(err) //neu doc du lieu loi thi...
+		return "" //neu doc du lieu loi thi...
 
 	}
 	return string(body)
 }
+//struct
+type malshare_data struct {
+	md5 []string
+	sha1 []string
+	sha256 []string
+}
 //ham lay md5, sha1, sha256 trong file
-func get_hash(url string) map[string] []string{
+func get_hash(url string) malshare_data{
 	data_str := request(url) //gan data_str = du lieu request body
-	var result map[string] []string
-	result = make(map[string] []string)
+	var result malshare_data
 	var md5_array [] string
 	var sha1_array [] string
 	var sha256_array [] string
@@ -43,17 +47,17 @@ func get_hash(url string) map[string] []string{
 		sha256_array = append(sha256_array, sha256_str) //them...
 
 	}
-	result["md5"] = md5_array //tra ve map mang md5
-	result["sha1"] = sha1_array
-	result["sha256"] = sha256_array
+	result.md5 = md5_array //tra ve map mang md5
+	result.sha1 = sha1_array
+	result.sha256 = sha256_array
 	return result
 }
 
-func dump_data() map[string] map[string] []string {
-	var malshare_map map[string] map[string] []string
-	malshare_map = make(map[string] map[string] []string)
+func dump_data() map[string] malshare_data {
+	var malshare_map map[string] malshare_data
+	malshare_map = make(map[string] malshare_data)
 	body_str := request("https://malshare.com/daily/") // gan body_str = du lieu request body url
-	host_str := "https://malshare.com/daily/"
+	//host_str := "https://malshare.com/daily/"
 	magic_str := "alt=\"[DIR]\"></td><td><a href=\"" //gan magic_str bang doan string ngay trc vi tri ngay thang nam
 	end_str:="_disabled/" //string diem dung cua ngay thang nam
 	//fmt.Println(get_hash("https://malshare.com/daily/2019-11-08/malshare_fileList.2019-11-08.all.txt"))
@@ -77,7 +81,7 @@ func dump_data() map[string] map[string] []string {
 		//yyyy := date_str[0:4]
 		//mm := date_str[5:7]
 		//dd := date_str[8:10]
-		url_str := host_str + date_str + "/malshare_fileList." + date_str + ".all.txt"
+		url_str := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", date_str, date_str)
 		//url_str:=strings.Join([]string{str1, body_str[i+len(magic_str) : i+len(magic_str)+10]},"")
 		fmt.Println(url_str)
 		hash_map := get_hash(url_str) // gan hash_map bang cac doan hash ham get_hash...
@@ -89,48 +93,51 @@ func dump_data() map[string] map[string] []string {
 	}
 	return malshare_map
 }
-func orginize_data(malshare_map map[string] map[string] []string){
+func orginize_data(malshare_map map[string] malshare_data){
 	for k := range malshare_map { // dung for duyet mang malshare_map de lay cac gia tri date_str
 		//fmt.Println(k)
 		yyyy := k[0:4] //cat gia tri yyyy
 		mm := k[5:7] //...
 		dd := k[8:10] //...
+		yyyy_path:=fmt.Sprintf("./%s",yyyy)
+		mm_path:=fmt.Sprintf("%s/%s",yyyy_path,mm)
+		dd_path:=fmt.Sprintf("%s/%s",mm_path,dd)
 		//tao folder yyyy, neu chua ton tai
-		if _, err := os.Stat("./" + yyyy); os.IsNotExist(err) {
-			os.Mkdir("./" + yyyy,777)
+		if _, err := os.Stat(yyyy_path); os.IsNotExist(err) {
+			os.Mkdir(yyyy_path,777)
 		}
 		//tao folder mm trong yyyy
-		if _, err := os.Stat("./" + yyyy +"/"+ mm); os.IsNotExist(err) {
-			os.Mkdir("./" + yyyy +"/"+ mm,777)
+		if _, err := os.Stat(mm_path); os.IsNotExist(err) {
+			os.Mkdir(mm_path,777)
 		}
 		//tao folder dd trong yyyy/mm/
-		if _, err := os.Stat("./" + yyyy +"/"+ mm + "/" + dd); os.IsNotExist(err) {
-			os.Mkdir("./" + yyyy +"/"+ mm + "/" + dd,777)
+		if _, err := os.Stat(dd_path); os.IsNotExist(err) {
+			os.Mkdir(dd_path,777)
 		}
 		//ghi file md5.txt trong folder yyyy/mm/dd
-		file, err := os.Create("./" + yyyy +"/"+ mm + "/" + dd + "/md5.txt")
+		file, err := os.Create(fmt.Sprintf("%s/md5.txt", dd_path))
 		if err != nil{
 			continue //neu co loi thi ghi sang ngay tiep theo
 		}
 		//duyet tung phan tu md5 trong mang malshare_map de ghi vao file
-		for i:=0; i<len(malshare_map[k]["md5"]); i++{ // lay tu 0 den < tong so luong phan tu trong mang
-			file.WriteString(malshare_map[k]["md5"][i]+"\n")
+		for i:=0; i<len(malshare_map[k].md5); i++{ // lay tu 0 den < tong so luong phan tu trong mang
+			file.WriteString(malshare_map[k].md5[i]+"\n")
 		}
 		file.Close() //dong file sau khi ghi
-		file, err = os.Create("./" + yyyy +"/"+ mm + "/" + dd + "/sha1.txt")
+		file, err = os.Create(fmt.Sprintf("%s/sha1.txt", dd_path))
 		if err != nil{
 			continue
 		}
-		for i:=0; i<len(malshare_map[k]["sha1"]); i++{
-			file.WriteString(malshare_map[k]["sha1"][i]+"\n")
+		for i:=0; i<len(malshare_map[k].sha1); i++{
+			file.WriteString(malshare_map[k].sha1[i]+"\n")
 		}
 		file.Close()
-		file, err = os.Create("./" + yyyy +"/"+ mm + "/" + dd + "/sha256.txt")
+		file, err = os.Create(fmt.Sprintf("%s/sha256.txt", dd_path))
 		if err != nil{
 			continue
 		}
-		for i:=0; i<len(malshare_map[k]["sha256"]); i++{
-			file.WriteString(malshare_map[k]["sha256"][i]+"\n")
+		for i:=0; i<len(malshare_map[k].sha256); i++{
+			file.WriteString(malshare_map[k].sha256[i]+"\n")
 		}
 		file.Close()
 	}
