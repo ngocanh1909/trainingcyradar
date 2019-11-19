@@ -7,18 +7,18 @@ import (
 	"os"
 	"strings"
 )
-func request(url string) string{
+func request(url string) (string, error){
 	resp, err := http.Get(url)
 	if err != nil{
-		return ""// neu get loi thi luu vet r exit
+		return "", err// neu get loi thi luu vet r exit
 	}
 	defer resp.Body.Close() // tri hoan dong body
 	body, err := ioutil.ReadAll(resp.Body) // doc du lieu request body su dung
 	if err != nil{
-		return "" //neu doc du lieu loi thi...
+		return "", err //neu doc du lieu loi thi...
 
 	}
-	return string(body)
+	return string(body), err
 }
 //struct
 type malshare_data struct {
@@ -28,7 +28,10 @@ type malshare_data struct {
 }
 //ham lay md5, sha1, sha256 trong file
 func get_hash(url string) malshare_data{
-	data_str := request(url) //gan data_str = du lieu request body
+	data_str, err := request(url) //gan data_str = du lieu request body
+	if err != nil{
+		fmt.Println(err)
+	}
 	var result malshare_data
 	var md5_array [] string
 	var sha1_array [] string
@@ -56,8 +59,11 @@ func get_hash(url string) malshare_data{
 func dump_data() map[string] malshare_data {
 	var malshare_map map[string] malshare_data
 	malshare_map = make(map[string] malshare_data)
-	body_str := request("https://malshare.com/daily/") // gan body_str = du lieu request body url
+	body_str, err := request("https://malshare.com/daily/") // gan body_str = du lieu request body url
 	//host_str := "https://malshare.com/daily/"
+	if err != nil{
+		fmt.Println(err)
+	}
 	magic_str := "alt=\"[DIR]\"></td><td><a href=\"" //gan magic_str bang doan string ngay trc vi tri ngay thang nam
 	end_str:="_disabled/" //string diem dung cua ngay thang nam
 	//fmt.Println(get_hash("https://malshare.com/daily/2019-11-08/malshare_fileList.2019-11-08.all.txt"))
