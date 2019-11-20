@@ -54,7 +54,6 @@ func getHash(url string) malshareData{
 	result.sha256 = sha256Array
 	return result
 }
-
 func dumpData() map[string] malshareData {
 	malshareMap := make(map[string] malshareData)
 	bodyStr, err := request("https://malshare.com/daily/")
