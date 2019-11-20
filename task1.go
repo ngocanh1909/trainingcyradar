@@ -68,7 +68,7 @@ func dump_data() map[string] malshare_data {
 	magic_str := string(magic.Find([]byte(body_str)))
 	end := regexp.MustCompile("_[a-z]{8}/")
 	out_end := string(end.Find([]byte(body_str)))
-	dem := 0
+	//dem := 0
 	for {
 		i := strings.Index(body_str, magic_str) // tim kiem doan magic trong chuoi string body url
 		re := regexp.MustCompile("=\"[0-9]{4}-\\d{2}-\\d{2}")
@@ -78,16 +78,14 @@ func dump_data() map[string] malshare_data {
 		if date_str == out_end{
 			break
 		}
-
 		url_str := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", date_str, date_str)
-		//url_str:=strings.Join([]string{str1, body_str[i+len(magic_str) : i+len(magic_str)+10]},"")
 		fmt.Println(url_str)
 		hash_map := get_hash(url_str) // gan hash_map bang cac doan hash ham get_hash...
 		malshare_map[date_str] = hash_map // luu cac doan hash trong mang hash_map vao mang malshare_map ngay thang...
-		dem=dem+1
-		if(dem>100){
-			break
-		}
+		//dem=dem+1
+		//if(dem>100){
+		//	break
+		//}
 	}
 	return malshare_map
 }
