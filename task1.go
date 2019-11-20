@@ -17,7 +17,6 @@ func request(url string) (string, error){
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil{
 		return "", err
-
 	}
 	return string(body), err
 }
@@ -47,7 +46,6 @@ func getHash(url string) malshareData{
 		md5Array = append(md5Array, md5Str)
 		sha1Array = append(sha1Array, sha1Str)
 		sha256Array = append(sha256Array, sha256Str)
-
 	}
 	result.md5 = md5Array
 	result.sha1 = sha1Array
@@ -64,7 +62,6 @@ func dumpData() map[string] malshareData {
 	magicStr := string(magic.Find([]byte(bodyStr)))
 	end := regexp.MustCompile("_[a-z]{8}/")
 	outEnd := string(end.Find([]byte(bodyStr)))
-	dem := 0
 	for {
 		i := strings.Index(bodyStr, magicStr)
 		re := regexp.MustCompile("=\"[0-9]{4}-\\d{2}-\\d{2}")
@@ -74,14 +71,10 @@ func dumpData() map[string] malshareData {
 		if dateStr == outEnd{
 			break
 		}
-		url_str := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", dateStr, dateStr)
-		fmt.Println(url_str)
-		hash_map := getHash(url_str)
-		malshareMap[dateStr] = hash_map
-		dem=dem+1
-		if(dem>100){
-			break
-		}
+		urlStr := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", dateStr, dateStr)
+		fmt.Println(urlStr)
+		hashMap := getHash(urlStr)
+		malshareMap[dateStr] = hashMap
 	}
 	return malshareMap
 }
