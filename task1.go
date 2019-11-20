@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 )
 func request(url string) (string, error){
@@ -28,11 +29,11 @@ type malshare_data struct {
 }
 //ham lay md5, sha1, sha256 trong file
 func get_hash(url string) malshare_data{
+	var result malshare_data
 	data_str, err := request(url) //gan data_str = du lieu request body
 	if err != nil{
-		fmt.Println(err)
+		return result
 	}
-	var result malshare_data
 	var md5_array [] string
 	var sha1_array [] string
 	var sha256_array [] string
@@ -57,45 +58,36 @@ func get_hash(url string) malshare_data{
 }
 
 func dump_data() map[string] malshare_data {
-	var malshare_map map[string] malshare_data
-	malshare_map = make(map[string] malshare_data)
+	malshare_map := make(map[string] malshare_data)
 	body_str, err := request("https://malshare.com/daily/") // gan body_str = du lieu request body url
 	//host_str := "https://malshare.com/daily/"
 	if err != nil{
-		fmt.Println(err)
+		return malshare_map
 	}
-	magic_str := "alt=\"[DIR]\"></td><td><a href=\"" //gan magic_str bang doan string ngay trc vi tri ngay thang nam
-	end_str:="_disabled/" //string diem dung cua ngay thang nam
-	//fmt.Println(get_hash("https://malshare.com/daily/2019-11-08/malshare_fileList.2019-11-08.all.txt"))
-	//fmt.Println(body_str)
-	//dem:=0
+	magic := regexp.MustCompile(`\"\[DIR\]\"></[a-z]{2}><[a-z]{2}><a\s[a-z]{4}=\"`)
+	magic_str := string(magic.Find([]byte(body_str)))
+	end := regexp.MustCompile("_[a-z]{8}/")
+	out_end := string(end.Find([]byte(body_str)))
+	dem := 0
 	for {
 		i := strings.Index(body_str, magic_str) // tim kiem doan magic trong chuoi string body url
-		//lay yyyy-mm-dd
-		//cat vi tri ngay thang nam
-		// gan date_str = do dai tu cuoi vi tri tim kiem (i+len) den het vi tri yyyy-mm-dd
-		date_str := body_str[i+len(magic_str) : i+len(magic_str)+10]
-		//fmt.Println(i)
-		//lay yyyy-mm-dd tiep theo
-		//cat tu sau yyyy-mm-dd dau tien den het body string
-		//gan body_str = do dai tu cuoi vi tri ngay thang nam dc tim thay dau tien den het body string
+		re := regexp.MustCompile("=\"[0-9]{4}-\\d{2}-\\d{2}")
+		out := re.Find([]byte (body_str))
+		date_str := string(out)[2:]
 		body_str = body_str[i+len(magic_str)+1: len(body_str)]
-		//fmt.Println(body_str)
-		if date_str == end_str{
-			break //neu date_str toi diem dung thi beak
+		if date_str == out_end{
+			break
 		}
-		//yyyy := date_str[0:4]
-		//mm := date_str[5:7]
-		//dd := date_str[8:10]
+
 		url_str := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", date_str, date_str)
 		//url_str:=strings.Join([]string{str1, body_str[i+len(magic_str) : i+len(magic_str)+10]},"")
 		fmt.Println(url_str)
 		hash_map := get_hash(url_str) // gan hash_map bang cac doan hash ham get_hash...
 		malshare_map[date_str] = hash_map // luu cac doan hash trong mang hash_map vao mang malshare_map ngay thang...
-		//dem=dem+1
-		//if(dem>10){
-		//	break
-		//}
+		dem=dem+1
+		if(dem>100){
+			break
+		}
 	}
 	return malshare_map
 }
