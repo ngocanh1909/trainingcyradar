@@ -39,16 +39,16 @@ func offBit( val uint32 ,k_th int ) uint32{
 	result = val  & operator
 	return result
 }
-func handleIPRange(Prefixes string) (uint32,int){
+func handleIPRange(prefixes string) (uint32,int){
 	//Doc cai IP trong 1 dai IP
-	iprangeIP := Prefixes[0 : strings.Index(Prefixes, "/")]
+	iprangeIP := prefixes[0 : strings.Index(prefixes, "/")]
 	ip := net.ParseIP(iprangeIP)
 	val32 := uint32(ip[12])
 	val32 = val32*256 + uint32(ip[13])
 	val32 = val32*256 + uint32(ip[14])
 	val32 = val32*256 + uint32(ip[15])
 	//Doc so luong bit dung trong  1 dai IP
-	nb := Prefixes[ strings.Index(Prefixes, "/")+1: ]
+	nb := prefixes[ strings.Index(prefixes, "/")+1: ]
 	nbit,err:= strconv.Atoi(nb)
 	if err != nil{
 		fmt.Printf("%s",err)
