@@ -1,11 +1,11 @@
 package main
+
 import (
 	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -27,45 +27,55 @@ type ipv6Prefixes struct {
 	Region     string `json:"region"`
 	Service    string `json:"service"`
 }
-func timeTrack(start time.Time, name string){
+func timeTrack(start time.Time, name string) {
 	elapsed := time.Since(start)
 	fmt.Printf("%s took %s\n", name, elapsed)
 }
-func offBit( val uint32 ,k_th int ) uint32{
+func offBit(val uint32, k_th int) uint32 {
 	var result uint32
 	var operator uint32
 	operator = 1 << k_th
 	operator = ^operator
-	result = val  & operator
+	result = val & operator
 	return result
 }
-func handleIPRange(prefixes string) (uint32,int){
-	//Doc cai IP trong 1 dai IP
-	iprangeIP := prefixes[0 : strings.Index(prefixes, "/")]
-	ip := net.ParseIP(iprangeIP)
-	val32 := uint32(ip[12])
-	val32 = val32*256 + uint32(ip[13])
-	val32 = val32*256 + uint32(ip[14])
-	val32 = val32*256 + uint32(ip[15])
-	//Doc so luong bit dung trong  1 dai IP
-	nb := prefixes[ strings.Index(prefixes, "/")+1: ]
-	nbit,err:= strconv.Atoi(nb)
-	if err != nil{
-		fmt.Printf("%s",err)
+func ipv4ToBit(ip string) uint32 {
+	parts := strings.Split(ip, ".")
+	var val32 uint32
+	if len(parts) < 4 {
+		fmt.Printf("This is NOT a valid IPv4 address")
+	} else if len(parts) == 4 {
+		for i := 0; i < len(parts); i++ {
+			if j, err := strconv.Atoi(parts[i]); err == nil {
+				if j < 0 || j > 255 {
+					fmt.Printf("This is NOT a valid IPv4 address")
+				}
+				val32 = val32*256 + uint32(j)
+			}
+		}
 	}
-	return val32,nbit
+	return val32
 }
-func handleIP(ip string,ipRange uint32,nbit int) uint32{
-	ipp := net.ParseIP(ip)
-	val32 := uint32(ipp[12])
-	val32 = val32*256+uint32(ipp[13])
-	val32 = val32*256+uint32(ipp[14])
-	val32 = val32*256+uint32(ipp[15])
-	//fmt.Printf("%d %b\n ",nbit,bang_tat_bit[32-nbit])
-	val32=val32 & tableOffBit[32-nbit]
-	return val32 ^  ipRange
+func handleIPRange(prefixes string) (uint32, uint32) {
+	iprangeIP := prefixes[0:strings.Index(prefixes, "/")]
+	val32 := ipv4ToBit(iprangeIP)
+	nb := prefixes[ strings.Index(prefixes, "/")+1:]
+	nbit, err := strconv.Atoi(nb)
+	if err != nil {
+		fmt.Printf("%s", err)
+	}
+	var numberAnd uint32
+	numberAnd = ^numberAnd
+	for  i := 0; i<32-nbit; i++{
+		numberAnd = offBit(numberAnd,i)
+	}
+	return val32, numberAnd
 }
-var tableOffBit[] uint32
+func handleIP(ip string, ipRange uint32, numberAnd uint32) uint32 {
+	val32 := ipv4ToBit(ip)
+	val32 = val32 & numberAnd
+	return val32 ^ ipRange
+}
 func main() {
 	var parent IPRange
 	defer timeTrack(time.Now(), fmt.Sprintf("Compare IP"))
@@ -74,29 +84,22 @@ func main() {
 		return
 	}
 	myJson := string(read)
-	var bitOff uint32
-	bitOff = 0xFFFFFFFF //11111111111111111111111111
-	tableOffBit=append(tableOffBit,0xFFFFFFFF)
-	for i:=0 ; i<32;i++{
-		bitOff=offBit(bitOff,i)
-		tableOffBit=append(tableOffBit,bitOff)
-	}
-	tableOffBit=append(tableOffBit,0)
 	json.Unmarshal([]byte(myJson), &parent)
-	var line[] string
-	for i:=0; i<len(parent.Prefixes); i++{
+	var line [] string
+	for i := 0; i < len(parent.Prefixes); i++ {
 		line = append(line, parent.Prefixes[i].IPPrefix)
 	}
 	line = append(line, "10.0.0.0/8")
 	line = append(line, "172.16.0.0/12")
 	line = append(line, "192.168.0.0/16")
 	var iprangeArr [] uint32
-	var iprangeNBit [] int
-	for i:=0; i<len(line); i++{
-		iprange,nbit:= handleIPRange(line[i])
+	var numberAndArr [] uint32
+	for i := 0; i < len(line); i++ {
+		iprange, so_de_and := handleIPRange(line[i])
 		iprangeArr = append(iprangeArr, iprange)
-		iprangeNBit = append(iprangeNBit,nbit)
+		numberAndArr = append(numberAndArr, so_de_and)
 	}
+	fmt.Printf("%b ", numberAndArr)
 	file, err := os.Open("all.txt")
 	if err != nil {
 		log.Fatal(err)
@@ -104,17 +107,16 @@ func main() {
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var count=0
+		var count = 0
 		ip := scanner.Text()
-		for i:=0; i<len(iprangeArr); i++{
-			if(handleIP(ip, iprangeArr[i],iprangeNBit[i])==0){
+		for i := 0; i < len(iprangeArr); i++ {
+			if (handleIP(ip, iprangeArr[i], numberAndArr[i]) == 0) {
 				count++
 			}
 		}
-		if (count==0){
-			fmt.Printf("%s\n",ip)
+		if (count == 0) {
+			fmt.Printf("%s\n", ip)
 			break
 		}
-
 	}
 }
