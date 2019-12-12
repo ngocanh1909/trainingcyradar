@@ -58,8 +58,9 @@ func ipv4ToBit(ip string) (uint32, error) {
 	return val32, nil
 }
 func handleIPRange(prefixes string) (uint32, uint32, error) {
-	if len(prefixes) == 0{
-		return -1, -1, errors.New("This is NOT ip range")
+	i := strings.Index(prefixes, "/")
+	if i < -1 {
+		return -1, -1 , errors.New("This is NOT ip range")
 	}
 	iprangeIP := prefixes[0:strings.Index(prefixes, "/")]
 	if len(iprangeIP) == 0{
@@ -69,7 +70,10 @@ func handleIPRange(prefixes string) (uint32, uint32, error) {
 	if err != nil{
 		return -1, -1, errors.New("This is NOT a valid IPv4 address")
 	}
-	nb := prefixes[ strings.Index(prefixes, "/")+1:]
+	nb := prefixes[ strings.Index(prefixes, "/")+1 :]
+	if len(prefixes[i+1 :]) == 0{
+		return -1, -1, errors.New("This is NOT ip range")
+	}
 	nbit, err := strconv.Atoi(nb)
 	if err != nil {
 		return -1, -1, err
