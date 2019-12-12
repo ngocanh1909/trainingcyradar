@@ -32,10 +32,10 @@ func timeTrack(start time.Time, name string) {
 	elapsed := time.Since(start)
 	fmt.Printf("%s took %s\n", name, elapsed)
 }
-func offBit(val uint32, k_th int) uint32 {
+func offBit(val uint32, k int) uint32 {
 	var result uint32
 	var operator uint32
-	operator = 1 << k_th
+	operator = 1 << k
 	operator = ^operator
 	result = val & operator
 	return result
@@ -58,6 +58,9 @@ func ipv4ToBit(ip string) (uint32, error) {
 	return val32, nil
 }
 func handleIPRange(prefixes string) (uint32, uint32, error) {
+	if len(prefixes) == 0{
+		return -1, -1, errors.New("This is NOT ip range")
+	}
 	iprangeIP := prefixes[0:strings.Index(prefixes, "/")]
 	if len(iprangeIP) == 0{
 		return -1, -1, errors.New("This is NOT a valid IPv4 address")
@@ -88,7 +91,7 @@ func handleIP(ip string, ipRange uint32, numberAnd uint32) uint32 {
 }
 func main() {
 	var parent IPRange
-	defer timeTrack(time.Now(), fmt.Sprintf("Compare IP"))
+	defer timeTrack(time.Now(), fmt.Sprint("Compare IP"))
 	read, err := ioutil.ReadFile("ip-ranges.json")
 	if err != nil {
 		log.Fatal(err)
