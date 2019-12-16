@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -10,28 +11,32 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"errors"
 )
+
 type IPRange struct {
 	SyncToken    string `json:"syncToken"`
 	CreateDate   string `json:"createDate"`
 	Prefixes     [] Prefixes
 	Ipv6Prefixes [] ipv6Prefixes
 }
+
 type Prefixes struct {
 	IPPrefix string `json:"ip_prefix"`
 	Region   string `json:"region"`
 	Service  string `json:"service"`
 }
+
 type ipv6Prefixes struct {
 	Ipv6Prefix string `json:"ipv6_prefix"`
 	Region     string `json:"region"`
 	Service    string `json:"service"`
 }
+
 func timeTrack(start time.Time, name string) {
 	elapsed := time.Since(start)
 	fmt.Printf("%s took %s\n", name, elapsed)
 }
+
 func offBit(val uint32, k int) uint32 {
 	var result uint32
 	var operator uint32
@@ -40,6 +45,7 @@ func offBit(val uint32, k int) uint32 {
 	result = val & operator
 	return result
 }
+
 func ipv4ToBit(ip string) (uint32, error) {
 	parts := strings.Split(ip, ".")
 	var val32 uint32
@@ -57,42 +63,45 @@ func ipv4ToBit(ip string) (uint32, error) {
 	}
 	return val32, nil
 }
+
 func handleIPRange(prefixes string) (uint32, uint32, error) {
 	i := strings.Index(prefixes, "/")
-	if i < -1 {
-		return -1, -1 , errors.New("This is NOT ip range")
+	if i == -1 {
+		return -1, -1, errors.New("This is NOT ip range")
 	}
-	iprangeIP := prefixes[0:strings.Index(prefixes, "/")]
-	if len(iprangeIP) == 0{
+	iprangeIP := prefixes[0:i]
+	if len(iprangeIP) > len(prefixes) {
 		return -1, -1, errors.New("This is NOT a valid IPv4 address")
 	}
 	val32, err := ipv4ToBit(iprangeIP)
-	if err != nil{
+	if err != nil {
 		return -1, -1, errors.New("This is NOT a valid IPv4 address")
 	}
-	nb := prefixes[ strings.Index(prefixes, "/")+1 :]
-	if len(prefixes[i+1 :]) == 0{
+	if len(prefixes[i+1:]) > len(prefixes) {
 		return -1, -1, errors.New("This is NOT ip range")
 	}
+	nb := prefixes[i+1:]
 	nbit, err := strconv.Atoi(nb)
 	if err != nil {
 		return -1, -1, err
 	}
 	var numberAnd uint32
 	numberAnd = ^numberAnd
-	for  i := 0; i<32-nbit; i++{
-		numberAnd = offBit(numberAnd,i)
+	for i := 0; i < 32-nbit; i++ {
+		numberAnd = offBit(numberAnd, i)
 	}
 	return val32, numberAnd, nil
 }
+
 func handleIP(ip string, ipRange uint32, numberAnd uint32) uint32 {
 	val32, err := ipv4ToBit(ip)
-	if err != nil{
+	if err != nil {
 		return -1
 	}
 	val32 = val32 & numberAnd
 	return val32 ^ ipRange
 }
+
 func main() {
 	var parent IPRange
 	defer timeTrack(time.Now(), fmt.Sprint("Compare IP"))
