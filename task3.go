@@ -49,17 +49,19 @@ func offBit(val uint32, k int) uint32 {
 func ipv4ToBit(ip string) (uint32, error) {
 	parts := strings.Split(ip, ".")
 	var val32 uint32
-	if len(parts) < 4 {
+	if len(parts) != 4 {
 		return -1, errors.New("This is NOT a valid IPv4 address")
-	} else if len(parts) == 4 {
-		for i := 0; i < len(parts); i++ {
-			if j, err := strconv.Atoi(parts[i]); err == nil {
-				if j < 0 || j > 255 {
-					return -1, errors.New("This is NOT a valid IPv4 address")
-				}
-				val32 = val32*256 + uint32(j)
-			}
+	}
+	for i := 0; i < len(parts); i++ {
+		j, err := strconv.Atoi(parts[i])
+		if err != nil{
+			return -1, err
 		}
+		if j < 0 || j > 255 {
+			return -1, errors.New("This is NOT a valid IPv4 address")
+		}
+		val32 = val32*256 + uint32(j)
+
 	}
 	return val32, nil
 }
@@ -77,7 +79,7 @@ func handleIPRange(prefixes string) (uint32, uint32, error) {
 	if err != nil {
 		return -1, -1, errors.New("This is NOT a valid IPv4 address")
 	}
-	if len(prefixes[i+1:]) > len(prefixes) {
+	if i+1 > len(prefixes) {
 		return -1, -1, errors.New("This is NOT ip range")
 	}
 	nb := prefixes[i+1:]
