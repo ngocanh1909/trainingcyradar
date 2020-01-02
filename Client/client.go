@@ -1,112 +1,94 @@
-package main
+package Client
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	"github.com/ngocanh1909/Request"
 	"os"
 	"regexp"
 	"strings"
 )
 
-func request(url string) (string, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if (resp.Status == "404") {
-		return "", err
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(body), err
-}
+const URL  = "https://malshare.com/daily/"
+const LIMIT = 100000
 
 type malshareData struct {
-	date   string
-	md5    []string
-	sha1   []string
-	sha256 []string
+	date string
+	md5[] string
+	sha1[] string
+	sha256[] string
 }
 
-func getHash(date string) malshareData {
+func getHash(date string) malshareData{
 	var result malshareData
 	url := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", date, date)
-	dataStr, err := request(url)
-	if (len(dataStr) == 0) {
+	dataStr, err := Request.Request(url)
+	if err != nil{
 		return result
 	}
-	if err != nil {
-		return result
-	}
-	var md5Array [] string
-	var sha1Array [] string
-	var sha256Array [] string
-	for {
-		if (len(dataStr) == 0) {
+	var md5Array[] string
+	var sha1Aarray[] string
+	var sha256Array[] string
+	for{
+		if len(dataStr) == 0{
 			break
 		}
 		md5Str := dataStr[0:31]
 		sha1Str := dataStr[33:73]
 		sha256Str := dataStr[74:138]
 		i := strings.Index(dataStr, "\n")
-		dataStr = dataStr[i+1 : len(dataStr) ]
+		dataStr = dataStr[i+1 : len(dataStr)]
 		md5Array = append(md5Array, md5Str)
-		sha1Array = append(sha1Array, sha1Str)
+		sha1Aarray = append(sha1Aarray, sha1Str)
 		sha256Array = append(sha256Array, sha256Str)
 	}
 	result.date = date
 	result.md5 = md5Array
-	result.sha1 = sha1Array
+	result.sha1 = sha1Aarray
 	result.sha256 = sha256Array
 	return result
 }
 
-func worker(id int, jobs <-chan string, results chan<- malshareData) {
-	for j := range jobs {
+func worker(id int, jobs <- chan string, results chan <- malshareData){
+	for j:= range jobs{
 		fmt.Printf("worker %d start jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j, j)
 		results <- getHash(j)
 		fmt.Printf("worker %d finished jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j, j)
 	}
 }
 
-func dumpData() {
-	//malshareMap := make(map[string] malshareData)
-	bodyStr, err := request("https://malshare.com/daily/")
-	if err != nil {
+func DumpData(){
+	bodyStr, err := Request.Request(URL)
+	if err != nil{
+		fmt.Println(err)
 		return
 	}
-	jobs := make(chan string, 10000)
-	results := make(chan malshareData, 10000)
+	jobs := make(chan string, LIMIT)
+	results := make(chan malshareData, LIMIT)
 	magic := regexp.MustCompile(`\"\[DIR\]\"></[a-z]{2}><[a-z]{2}><a\s[a-z]{4}=\"`)
 	magicStr := string(magic.Find([]byte(bodyStr)))
 	end := regexp.MustCompile("_[a-z]{8}/")
 	outEnd := string(end.Find([]byte(bodyStr)))
-	for w := 1; w <= 100; w++ {
+	for w := 1 ; w < 101; w++{
 		go worker(w, jobs, results)
 	}
 	for {
 		i := strings.Index(bodyStr, magicStr)
-		re := regexp.MustCompile("=\"[0-9]{4}-\\d{2}-\\d{2}")
-		out := re.Find([]byte (bodyStr))
-		if (len(out) < 3) {
+		re := regexp.MustCompile("=\"\\d{4}-\\d{2}-\\d{2}")
+		out := re.Find([]byte(bodyStr))
+		if len(out) < 3{
 			break
 		}
 		dateStr := string(out)[2:]
 		bodyStr = bodyStr[i+len(magicStr)+1 : len(bodyStr)]
-		if dateStr == outEnd {
+		if dateStr == outEnd{
 			break
 		}
 		jobs <- dateStr
 	}
 	close(jobs)
-	for a := 1; a <= 10000; a++ {
+	for a:=1; a <= LIMIT; a++{
 		saveFile(<-results)
 	}
-	return
 }
 
 func saveFile(data malshareData) {
@@ -150,6 +132,3 @@ func saveFile(data malshareData) {
 	file.Close()
 }
 
-func main() {
-	dumpData()
-}
