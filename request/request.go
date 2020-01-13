@@ -1,4 +1,4 @@
-package Request
+package request
 
 import (
 	"io/ioutil"

@@ -1,4 +1,4 @@
-package Client
+package savefile
 
 import (
 	"fmt"
@@ -8,28 +8,28 @@ import (
 	"strings"
 )
 
-const URL  = "https://malshare.com/daily/"
+const URL = "https://malshare.com/daily/"
 const LIMIT = 100000
 
 type malshareData struct {
-	date string
-	md5[] string
-	sha1[] string
-	sha256[] string
+	date   string
+	md5    [] string
+	sha1   [] string
+	sha256 [] string
 }
 
-func getHash(date string) malshareData{
+func getHash(date string) malshareData {
 	var result malshareData
 	url := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", date, date)
 	dataStr, err := request.Request(url)
-	if err != nil{
+	if err != nil {
 		return result
 	}
-	var md5Array[] string
-	var sha1Aarray[] string
-	var sha256Array[] string
-	for{
-		if len(dataStr) == 0{
+	var md5Array [] string
+	var sha1Aarray [] string
+	var sha256Array [] string
+	for {
+		if len(dataStr) == 0 {
 			break
 		}
 		md5Str := dataStr[0:31]
@@ -48,17 +48,17 @@ func getHash(date string) malshareData{
 	return result
 }
 
-func worker(id int, jobs <- chan string, results chan <- malshareData){
-	for j:= range jobs{
+func worker(id int, jobs <-chan string, results chan<- malshareData) {
+	for j := range jobs {
 		fmt.Printf("worker %d start jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j, j)
 		results <- getHash(j)
 		fmt.Printf("worker %d finished jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j, j)
 	}
 }
 
-func DumpData(){
+func DumpData() {
 	bodyStr, err := request.Request(URL)
-	if err != nil{
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -68,25 +68,25 @@ func DumpData(){
 	magicStr := string(magic.Find([]byte(bodyStr)))
 	end := regexp.MustCompile("_[a-z]{8}/")
 	outEnd := string(end.Find([]byte(bodyStr)))
-	for w := 1 ; w < 101; w++{
+	for w := 1; w < 101; w++ {
 		go worker(w, jobs, results)
 	}
 	for {
 		i := strings.Index(bodyStr, magicStr)
 		re := regexp.MustCompile("=\"\\d{4}-\\d{2}-\\d{2}")
 		out := re.Find([]byte(bodyStr))
-		if len(out) < 3{
+		if len(out) < 3 {
 			break
 		}
 		dateStr := string(out)[2:]
 		bodyStr = bodyStr[i+len(magicStr)+1 : len(bodyStr)]
-		if dateStr == outEnd{
+		if dateStr == outEnd {
 			break
 		}
 		jobs <- dateStr
 	}
 	close(jobs)
-	for a:=1; a <= LIMIT; a++{
+	for a := 1; a <= LIMIT; a++ {
 		saveFile(<-results)
 	}
 }
@@ -131,4 +131,3 @@ func saveFile(data malshareData) {
 	}
 	file.Close()
 }
-
