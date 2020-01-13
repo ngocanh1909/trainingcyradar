@@ -2,7 +2,7 @@ package Client
 
 import (
 	"fmt"
-	"github.com/ngocanh1909/Request"
+	"github.com/ngocanh1909/request"
 	"os"
 	"regexp"
 	"strings"
@@ -21,7 +21,7 @@ type malshareData struct {
 func getHash(date string) malshareData{
 	var result malshareData
 	url := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", date, date)
-	dataStr, err := Request.Request(url)
+	dataStr, err := request.Request(url)
 	if err != nil{
 		return result
 	}
@@ -57,7 +57,7 @@ func worker(id int, jobs <- chan string, results chan <- malshareData){
 }
 
 func DumpData(){
-	bodyStr, err := Request.Request(URL)
+	bodyStr, err := request.Request(URL)
 	if err != nil{
 		fmt.Println(err)
 		return

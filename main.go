@@ -1,8 +1,8 @@
 package main
 
-import "github.com/ngocanh1909/Client"
+import "github.com/ngocanh1909/client"
 
 func main()  {
-	Client.DumpData()
+	client.DumpData()
 }
 
