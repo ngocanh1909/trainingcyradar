@@ -1,9 +1,9 @@
-package savemgo
+package crawl
 
 import (
 	"fmt"
+	"github.com/ngocanh1909/config"
 	"github.com/ngocanh1909/request"
-	"gopkg.in/mgo.v2"
 	"regexp"
 	"strings"
 )
@@ -11,33 +11,20 @@ import (
 const URL = "https://malshare.com/daily/"
 const LIMIT = 100000
 
-type MalshareData struct {
-	Date   string `json:"date" bson:"date"`
-	Md5    string `json:"md5" bson:"md5"`
-	Sha1   string `json:"sha1" bson:"sha1"`
-	Sha256 string `json:"sha256" bson:"sha256"`
-}
-
-const (
-	hosts      = "localhost:27017"
-	database   = "crawl"
-	username   = "admin1"
-	password   = "admin1"
-	collection = "post"
-)
-
-func getHash(date string) MalshareData {
-	var result MalshareData
+func getHash(id int ,date string) config.MalshareData {
+	var result config.MalshareData
 	url := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", date, date)
 	dataStr, err := request.Request(url)
 	if err != nil {
 		return result
 	}
+
 	var md5 = ""
 	var sha1 = ""
 	var sha256 = ""
+	fmt.Printf("Worker ID %d\n",id)
 	for {
-		if len(dataStr) == 0 {
+		if len(dataStr) <=0 {
 			break
 		}
 		md5Str := dataStr[0:32]
@@ -45,7 +32,6 @@ func getHash(date string) MalshareData {
 		sha256Str := dataStr[74:138]
 		i := strings.Index(dataStr, "\n")
 		dataStr = dataStr[i+1 : len(dataStr)]
-
 		md5 = fmt.Sprintf("%s %s", md5, md5Str)
 		sha1 = fmt.Sprintf("%s %s", sha1, sha1Str)
 		sha256 = fmt.Sprintf("%s %s", sha256, sha256Str)
@@ -57,25 +43,24 @@ func getHash(date string) MalshareData {
 	return result
 }
 
-func worker(id int, jobs <-chan string, results chan<- MalshareData) {
+var HashData []config.MalshareData
+
+func worker(id int, jobs <-chan string, results chan<- config.MalshareData) {
 	for j := range jobs {
 		fmt.Printf("worker %d start jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j, j)
-		results <- getHash(j)
+		results <- getHash(id,j)
 		fmt.Printf("worker %d finished jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j, j)
 	}
 }
 
-var session *mgo.Session;
-
-func DumpData(s *mgo.Session) {
-	session = s
+func DumpData() ([]config.MalshareData,error){
 	bodyStr, err := request.Request(URL)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil,err
 	}
 	jobs := make(chan string, LIMIT)
-	results := make(chan MalshareData, LIMIT)
+	results := make(chan config.MalshareData, LIMIT)
 	magic := regexp.MustCompile(`\"\[DIR\]\"></[a-z]{2}><[a-z]{2}><a\s[a-z]{4}=\"`)
 	magicStr := string(magic.Find([]byte(bodyStr)))
 	end := regexp.MustCompile("_[a-z]{8}/")
@@ -95,15 +80,18 @@ func DumpData(s *mgo.Session) {
 		if dateStr == outEnd {
 			break
 		}
+		if (dateStr == "2019-11-14" || dateStr=="2019-12-01"){
+			continue
+		}
 		jobs <- dateStr
 	}
 	close(jobs)
 	for a := 1; a <= LIMIT; a++ {
-		SaveFile(<-results)
+		HashArr(<-results)
 	}
+	return HashData,nil
 }
 
-func SaveFile(data MalshareData) {
-	col := session.DB(database).C(collection)
-	col.Insert(data)
+func HashArr(data config.MalshareData){
+	HashData = append(HashData,data)
 }

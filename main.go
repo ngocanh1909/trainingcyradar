@@ -1,8 +1,10 @@
 package main
 
 import (
-	"github.com/ngocanh1909/savefile"
-	"github.com/ngocanh1909/savemgo"
+	"fmt"
+	"github.com/ngocanh1909/config"
+	"github.com/ngocanh1909/crawl"
+	"github.com/ngocanh1909/save"
 	"gopkg.in/mgo.v2"
 	"time"
 )
@@ -12,7 +14,6 @@ const (
 	database   = "crawl"
 	username   = "admin1"
 	password   = "admin1"
-	collection = "post"
 )
 
 type Post struct {
@@ -30,11 +31,11 @@ func main() {
 		Password: password,
 	}
 	session, err := mgo.DialWithInfo(info)
-	if err != nil {
+	if err != nil{
 		panic(err)
 	}
-	//luu mgo
-	savemgo.DumpData(session)
-	//luu file
-	savefile.DumpData()
+	var hashData []config.MalshareData
+	hashData,err = crawl.DumpData()
+	fmt.Println("1")
+	save.SaveFile(session,hashData)
 }

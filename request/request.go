@@ -1,6 +1,7 @@
 package request
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 )
@@ -13,6 +14,10 @@ func Request(url string) (string,error)  {
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil{
+		return "", err
+	}
+	fmt.Printf("Error %d\n",resp.StatusCode );
+	if resp.StatusCode == 404{
 		return "", err
 	}
 	return string(body), err
