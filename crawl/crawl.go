@@ -6,12 +6,13 @@ import (
 	"github.com/ngocanh1909/request"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 const URL = "https://malshare.com/daily/"
-const LIMIT = 100000
+const LIMIT= 100000
 
-func getHash(id int ,date string) config.MalshareData {
+func getHash(id int, date string) config.MalshareData {
 	var result config.MalshareData
 	url := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", date, date)
 	dataStr, err := request.Request(url)
@@ -22,9 +23,9 @@ func getHash(id int ,date string) config.MalshareData {
 	var md5 = ""
 	var sha1 = ""
 	var sha256 = ""
-	fmt.Printf("Worker ID %d\n",id)
+	fmt.Printf("Worker ID %d\n", id)
 	for {
-		if len(dataStr) <=0 {
+		if len(dataStr) <= 0 {
 			break
 		}
 		md5Str := dataStr[0:32]
@@ -44,20 +45,22 @@ func getHash(id int ,date string) config.MalshareData {
 }
 
 var HashData []config.MalshareData
+var wg sync.WaitGroup
 
-func worker(id int, jobs <-chan string, results chan<- config.MalshareData) {
+func worker(id int, jobs <-chan string, results chan<- config.MalshareData, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for j := range jobs {
 		fmt.Printf("worker %d start jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j, j)
-		results <- getHash(id,j)
+		results <- getHash(id, j)
 		fmt.Printf("worker %d finished jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j, j)
 	}
 }
 
-func DumpData() ([]config.MalshareData,error){
+func DumpData() ([]config.MalshareData, error) {
 	bodyStr, err := request.Request(URL)
 	if err != nil {
 		fmt.Println(err)
-		return nil,err
+		return nil, err
 	}
 	jobs := make(chan string, LIMIT)
 	results := make(chan config.MalshareData, LIMIT)
@@ -66,8 +69,10 @@ func DumpData() ([]config.MalshareData,error){
 	end := regexp.MustCompile("_[a-z]{8}/")
 	outEnd := string(end.Find([]byte(bodyStr)))
 	for w := 1; w < 101; w++ {
-		go worker(w, jobs, results)
+		wg.Add(1)
+		go worker(w, jobs, results, &wg)
 	}
+	c := 0
 	for {
 		i := strings.Index(bodyStr, magicStr)
 		re := regexp.MustCompile("=\"\\d{4}-\\d{2}-\\d{2}")
@@ -80,18 +85,20 @@ func DumpData() ([]config.MalshareData,error){
 		if dateStr == outEnd {
 			break
 		}
-		if (dateStr == "2019-11-14" || dateStr=="2019-12-01"){
+		if (dateStr == "2019-11-14" || dateStr == "2019-12-01") {
 			continue
 		}
 		jobs <- dateStr
+		c++
 	}
 	close(jobs)
-	for a := 1; a <= LIMIT; a++ {
+	wg.Wait()
+	for a := 1; a <= c; a++ {
 		HashArr(<-results)
 	}
-	return HashData,nil
+	return HashData, nil
 }
 
-func HashArr(data config.MalshareData){
-	HashData = append(HashData,data)
+func HashArr(data config.MalshareData) {
+	HashData = append(HashData, data)
 }
