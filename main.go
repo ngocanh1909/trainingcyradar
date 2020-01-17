@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	hosts      = "localhost:27017"
-	database   = "crawl"
-	username   = "admin1"
-	password   = "admin1"
+	hosts    = "localhost:27017"
+	database = "crawl"
+	username = "admin1"
+	password = "admin1"
 )
 
 type Post struct {
@@ -31,11 +31,11 @@ func main() {
 		Password: password,
 	}
 	session, err := mgo.DialWithInfo(info)
-	if err != nil{
+	if err != nil {
 		panic(err)
 	}
 	var hashData []config.MalshareData
-	hashData,err = crawl.DumpData()
+	hashData, err = crawl.DumpData(&config.WaitGroup{})
 	fmt.Println("1")
-	save.SaveFile(session.DB(database),hashData)
+	save.SaveFile(session.DB(database), hashData)
 }

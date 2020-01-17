@@ -18,7 +18,6 @@ func getHash(id int, date string) config.MalshareData {
 	if err != nil {
 		return result
 	}
-
 	var md5 = ""
 	var sha1 = ""
 	var sha256 = ""
@@ -43,10 +42,8 @@ func getHash(id int, date string) config.MalshareData {
 	return result
 }
 
-//var wg sync.WaitGroup
-
-func worker(id int, jobs <-chan string, results chan<- config.MalshareData) {
-	//defer wg.Done()
+func worker(id int, jobs <-chan string, results chan<- config.MalshareData, wg *config.WaitGroup) {
+	defer wg.Wait.Done()
 	for j := range jobs {
 		fmt.Printf("worker %d start jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j, j)
 		results <- getHash(id, j)
@@ -54,7 +51,7 @@ func worker(id int, jobs <-chan string, results chan<- config.MalshareData) {
 	}
 }
 
-func DumpData() ([]config.MalshareData, error) {
+func DumpData(wg *config.WaitGroup) ([]config.MalshareData, error) {
 	var HashArray []config.MalshareData
 	bodyStr, err := request.Request(URL)
 	if err != nil {
@@ -68,8 +65,8 @@ func DumpData() ([]config.MalshareData, error) {
 	end := regexp.MustCompile("_[a-z]{8}/")
 	outEnd := string(end.Find([]byte(bodyStr)))
 	for w := 1; w < 101; w++ {
-		//wg.Add(1)
-		go worker(w, jobs, results)
+		wg.Wait.Add(1)
+		go worker(w, jobs, results, wg)
 	}
 	for {
 		i := strings.Index(bodyStr, magicStr)
@@ -89,10 +86,10 @@ func DumpData() ([]config.MalshareData, error) {
 		jobs <- dateStr
 	}
 	close(jobs)
-	//wg.Wait()
+	wg.Wait.Wait()
+	close(results)
 	for i := range results {
 		HashArray = append(HashArray, i)
-		fmt.Printf(i.Date)
 	}
 	return HashArray, nil
 }

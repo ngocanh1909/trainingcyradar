@@ -16,9 +16,8 @@ func Request(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	//fmt.Printf("Error %d\n", resp.StatusCode)
 	if resp.StatusCode < 200 || resp.StatusCode > 400 {
-		return "", errors.New("Fail")
+		return "", errors.New("Read Body Request Fail")
 	}
 	return string(body), err
 }
