@@ -9,7 +9,7 @@ import (
 )
 
 const URL = "https://malshare.com/daily/"
-const LIMIT= 100000
+const LIMIT = 100000
 
 func getHash(id int, date string) config.MalshareData {
 	var result config.MalshareData
@@ -55,7 +55,7 @@ func worker(id int, jobs <-chan string, results chan<- config.MalshareData) {
 }
 
 func DumpData() ([]config.MalshareData, error) {
-	var hashArray []config.MalshareData
+	var HashArray []config.MalshareData
 	bodyStr, err := request.Request(URL)
 	if err != nil {
 		fmt.Println(err)
@@ -90,13 +90,9 @@ func DumpData() ([]config.MalshareData, error) {
 	}
 	close(jobs)
 	//wg.Wait()
-	for i := range results{
-		HashArr(hashArray, i)
+	for i := range results {
+		HashArray = append(HashArray, i)
+		fmt.Printf(i.Date)
 	}
-	return hashArray, nil
+	return HashArray, nil
 }
-
-func HashArr(HashData []config.MalshareData, data config.MalshareData) {
-	HashData = append(HashData, data)
-}
-
