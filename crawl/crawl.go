@@ -6,7 +6,6 @@ import (
 	"github.com/ngocanh1909/request"
 	"regexp"
 	"strings"
-	"sync"
 )
 
 const URL = "https://malshare.com/daily/"
@@ -44,11 +43,11 @@ func getHash(id int, date string) config.MalshareData {
 	return result
 }
 
-var HashData []config.MalshareData
-var wg sync.WaitGroup
 
-func worker(id int, jobs <-chan string, results chan<- config.MalshareData, wg *sync.WaitGroup) {
-	defer wg.Done()
+//var wg sync.WaitGroup
+
+func worker(id int, jobs <-chan string, results chan<- config.MalshareData) {
+	//defer wg.Done()
 	for j := range jobs {
 		fmt.Printf("worker %d start jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j, j)
 		results <- getHash(id, j)
@@ -57,6 +56,7 @@ func worker(id int, jobs <-chan string, results chan<- config.MalshareData, wg *
 }
 
 func DumpData() ([]config.MalshareData, error) {
+	var HashArray []config.MalshareData
 	bodyStr, err := request.Request(URL)
 	if err != nil {
 		fmt.Println(err)
@@ -69,10 +69,9 @@ func DumpData() ([]config.MalshareData, error) {
 	end := regexp.MustCompile("_[a-z]{8}/")
 	outEnd := string(end.Find([]byte(bodyStr)))
 	for w := 1; w < 101; w++ {
-		wg.Add(1)
-		go worker(w, jobs, results, &wg)
+		//wg.Add(1)
+		go worker(w, jobs, results)
 	}
-	c := 0
 	for {
 		i := strings.Index(bodyStr, magicStr)
 		re := regexp.MustCompile("=\"\\d{4}-\\d{2}-\\d{2}")
@@ -89,16 +88,17 @@ func DumpData() ([]config.MalshareData, error) {
 			continue
 		}
 		jobs <- dateStr
-		c++
 	}
 	close(jobs)
-	wg.Wait()
-	for a := 1; a <= c; a++ {
-		HashArr(<-results)
+	//wg.Wait()
+	for i := range results{
+		HashArr(HashArray, i)
 	}
-	return HashData, nil
+	return HashArray, nil
 }
 
-func HashArr(data config.MalshareData) {
+func HashArr(HashData []config.MalshareData, data config.MalshareData) {
 	HashData = append(HashData, data)
+	fmt.Printf(data.Md5)
 }
+
