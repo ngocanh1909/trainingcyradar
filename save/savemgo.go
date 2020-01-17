@@ -6,8 +6,8 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
-func SaveFile(session *mgo.Session, hashData [] config.MalshareData){
-	col := session.DB("crawl").C("post")
+func SaveFile(db *mgo.Database, session *mgo.Session, hashData [] config.MalshareData){
+	col := db.C("post")
 	for i := 0; i < len(hashData); i++ {
 		err := col.Insert(hashData[i])
 		if err != nil {
