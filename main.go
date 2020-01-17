@@ -37,5 +37,5 @@ func main() {
 	var hashData []config.MalshareData
 	hashData,err = crawl.DumpData()
 	fmt.Println("1")
-	save.SaveFile(session,hashData)
+	save.SaveFile(session.DB(database),session,hashData)
 }
