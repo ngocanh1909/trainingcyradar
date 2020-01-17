@@ -43,7 +43,6 @@ func getHash(id int, date string) config.MalshareData {
 	return result
 }
 
-
 //var wg sync.WaitGroup
 
 func worker(id int, jobs <-chan string, results chan<- config.MalshareData) {
@@ -56,7 +55,7 @@ func worker(id int, jobs <-chan string, results chan<- config.MalshareData) {
 }
 
 func DumpData() ([]config.MalshareData, error) {
-	var HashArray []config.MalshareData
+	var hashArray []config.MalshareData
 	bodyStr, err := request.Request(URL)
 	if err != nil {
 		fmt.Println(err)
@@ -92,13 +91,12 @@ func DumpData() ([]config.MalshareData, error) {
 	close(jobs)
 	//wg.Wait()
 	for i := range results{
-		HashArr(HashArray, i)
+		HashArr(hashArray, i)
 	}
-	return HashArray, nil
+	return hashArray, nil
 }
 
 func HashArr(HashData []config.MalshareData, data config.MalshareData) {
 	HashData = append(HashData, data)
-	fmt.Printf(data.Md5)
 }
 
