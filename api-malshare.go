@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -18,15 +19,13 @@ const (
 
 type MalshareData struct {
 	ID     bson.ObjectId `bson:"_id,omitempty"`
-	Date   string        `bson:"date"`
+	Date   time.Time     `bson:"date"`
 	Md5    string        `bson:"md5"`
 	Sha1   string        `bson:"sha1"`
 	Sha256 string        `bson:"sha256"`
 }
 
-var db = make(map[string]string)
-
-func processGET(c *gin.Context) {
+func DBConn() (session *mgo.Session) {
 	info := &mgo.DialInfo{
 		Addrs:    []string{hosts},
 		Timeout:  60 * time.Second,
@@ -36,34 +35,43 @@ func processGET(c *gin.Context) {
 	}
 	session, err := mgo.DialWithInfo(info)
 	if err != nil {
-		panic(err)
+		errors.New("Connect fail")
+		return
 	}
-	collection := session.DB(database).C(collection)
-	date := c.Params.ByName("date")
-	query := bson.M{
-		"date": date,
-	}
+	return session
+}
+
+func processGET(c *gin.Context) {
+	s := DBConn()
+	collection := s.DB(database).C(collection)
 	malshareData := MalshareData{}
-	err = collection.Find(query).One(&malshareData)
-	//fmt.Print(malshareData)
+	date := c.Params.ByName("date")
+	dateParse, _ := time.Parse("2006-01-02", date)
+	query := bson.M{
+		"date": dateParse,
+	}
+	err := collection.Find(query).One(&malshareData)
+	if err == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"date":   dateParse,
+			"status": "ok",
+			"md5":    malshareData.Md5,
+			"sha1":   malshareData.Sha1,
+			"sha256": malshareData.Sha256,
+		})
+	}
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"date": date, "status": "no value"})
-	} else {
-		c.JSON(http.StatusOK, gin.H{"date": date, "status": "ok", "md5": malshareData.Md5})
+		c.JSON(http.StatusOK, gin.H{"date": dateParse, "status": "no value"})
 	}
 }
 
 func setupRouter() *gin.Engine {
-	// Disable Console Color
-	// gin.DisableConsoleColor()
 	r := gin.Default()
-	// Get user value
 	r.GET("/malshare/:date", processGET)
 	return r
 }
 
 func main() {
 	r := setupRouter()
-	// Listen and Server in 0.0.0.0:8080
 	r.Run(":8080")
 }

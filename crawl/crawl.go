@@ -6,14 +6,15 @@ import (
 	"github.com/ngocanh1909/request"
 	"regexp"
 	"strings"
+	"time"
 )
 
 const URL = "https://malshare.com/daily/"
 const LIMIT = 100000
 
-func getHash(id int, date string) config.MalshareData {
+func getHash(id int, date time.Time) config.MalshareData {
 	var result config.MalshareData
-	url := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", date, date)
+	url := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", date.Format("2006-01-02"), date.Format("2006-01-02"))
 	dataStr, err := request.Request(url)
 	if err != nil {
 		return result
@@ -42,12 +43,12 @@ func getHash(id int, date string) config.MalshareData {
 	return result
 }
 
-func worker(id int, jobs <-chan string, results chan<- config.MalshareData, wg *config.WaitGroup) {
+func worker(id int, jobs <-chan time.Time, results chan<- config.MalshareData, wg *config.WaitGroup) {
 	defer wg.Wait.Done()
 	for j := range jobs {
-		fmt.Printf("worker %d start jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j, j)
+		fmt.Printf("worker %d start jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j.Format("2006-01-02"), j.Format("2006-01-02"))
 		results <- getHash(id, j)
-		fmt.Printf("worker %d finished jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j, j)
+		fmt.Printf("worker %d finished jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j.Format("2006-01-02"), j.Format("2006-01-02"))
 	}
 }
 
@@ -58,7 +59,7 @@ func DumpData(wg *config.WaitGroup) ([]config.MalshareData, error) {
 		fmt.Println(err)
 		return nil, err
 	}
-	jobs := make(chan string, LIMIT)
+	jobs := make(chan time.Time, LIMIT)
 	results := make(chan config.MalshareData, LIMIT)
 	magic := regexp.MustCompile(`\"\[DIR\]\"></[a-z]{2}><[a-z]{2}><a\s[a-z]{4}=\"`)
 	magicStr := string(magic.Find([]byte(bodyStr)))
@@ -68,6 +69,7 @@ func DumpData(wg *config.WaitGroup) ([]config.MalshareData, error) {
 		wg.Wait.Add(1)
 		go worker(w, jobs, results, wg)
 	}
+	c := 0
 	for {
 		i := strings.Index(bodyStr, magicStr)
 		re := regexp.MustCompile("=\"\\d{4}-\\d{2}-\\d{2}")
@@ -83,7 +85,13 @@ func DumpData(wg *config.WaitGroup) ([]config.MalshareData, error) {
 		if (dateStr == "2019-11-14" || dateStr == "2019-12-01") {
 			continue
 		}
-		jobs <- dateStr
+		t, _ := time.Parse("2006-01-02", dateStr)
+		fmt.Println(t)
+		jobs <- t
+		c++
+		if c >= 100 {
+			break
+		}
 	}
 	close(jobs)
 	wg.Wait.Wait()
