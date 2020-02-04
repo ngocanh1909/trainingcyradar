@@ -25,28 +25,32 @@ type MalshareData struct {
 	Sha256 string        `bson:"sha256"`
 }
 
-type MalshareDAO struct{
-	 *mgo.Database
+type MalshareDAO struct {
+	*mgo.Database
 }
 
-func (mal *MalshareDAO) processGET(c *gin.Context){
+func (mal *MalshareDAO) processGET(c *gin.Context) {
 	malshareData := MalshareData{}
 	date := c.Params.ByName("date")
 	dateParse, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, "Error: Date Parse Failed")
+		return
+	}
 	query := bson.M{
 		"date": dateParse,
 	}
 	err = mal.C(collection).Find(query).One(&malshareData)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, "Error: Query Failed")
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-			"date":   dateParse,
-			"status": "ok",
-			"md5":    malshareData.Md5,
-			"sha1":   malshareData.Sha1,
-			"sha256": malshareData.Sha256,
+		"date":   dateParse,
+		"status": "ok",
+		"md5":    malshareData.Md5,
+		"sha1":   malshareData.Sha1,
+		"sha256": malshareData.Sha256,
 	})
 }
 
@@ -68,6 +72,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	r := MalshareDAO{session.DB(database)}.setupRouter()
+	d := MalshareDAO{session.DB(database)}
+	r := d.setupRouter()
 	r.Run(":8080")
 }
