@@ -1,10 +1,10 @@
 package main
 
 import (
-	"errors"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+	"log"
 	"net/http"
 	"time"
 )
@@ -17,8 +17,6 @@ const (
 	collection = "post"
 )
 
-var coll *mgo.Collection
-
 type MalshareData struct {
 	ID     bson.ObjectId `bson:"_id,omitempty"`
 	Date   time.Time     `bson:"date"`
@@ -27,36 +25,34 @@ type MalshareData struct {
 	Sha256 string        `bson:"sha256"`
 }
 
-func processGET(c *gin.Context) {
+type MalshareDAO struct{
+	 *mgo.Database
+}
 
+func (mal *MalshareDAO) processGET(c *gin.Context){
 	malshareData := MalshareData{}
 	date := c.Params.ByName("date")
 	dateParse, err := time.Parse("2006-01-02", date)
-	if err != nil {
-		errors.New("")
-	}
 	query := bson.M{
 		"date": dateParse,
 	}
-	err = coll.Find(query).One(&malshareData)
+	err = mal.C(collection).Find(query).One(&malshareData)
 	if err != nil {
-		c.JSON(http.StatusNotAcceptable, gin.H{"date": dateParse, "status": "no value"})
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
 	}
-	if err == nil {
-		c.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 			"date":   dateParse,
 			"status": "ok",
 			"md5":    malshareData.Md5,
 			"sha1":   malshareData.Sha1,
 			"sha256": malshareData.Sha256,
-		})
-	}
-
+	})
 }
 
-func setupRouter() *gin.Engine {
+func (mal *MalshareDAO) setupRouter() *gin.Engine {
 	r := gin.Default()
-	r.GET("/malshare/:date", processGET)
+	r.GET("/malshare/:date", mal.processGET)
 	return r
 }
 
@@ -70,10 +66,8 @@ func main() {
 	}
 	session, err := mgo.DialWithInfo(info)
 	if err != nil {
-		errors.New("Connect fail")
-		return
+		log.Fatal(err)
 	}
-	coll = session.DB(database).C(collection)
-	r := setupRouter()
+	r := MalshareDAO{session.DB(database)}.setupRouter()
 	r.Run(":8080")
 }
