@@ -1,7 +1,7 @@
 package save
 
 import (
-	"github.com/ngocanh1909/config"
+	"github.com/ngocanh1909/trainingcyradar/config"
 	"gopkg.in/mgo.v2"
 )
 

@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/ngocanh1909/config"
-	"github.com/ngocanh1909/crawl"
-	"github.com/ngocanh1909/save"
+	"github.com/ngocanh1909/trainingcyradar/config"
+	"github.com/ngocanh1909/trainingcyradar/crawl"
+	"github.com/ngocanh1909/trainingcyradar/save"
 	"gopkg.in/mgo.v2"
 	"time"
 )

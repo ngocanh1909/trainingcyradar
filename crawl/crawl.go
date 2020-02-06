@@ -2,8 +2,8 @@ package crawl
 
 import (
 	"fmt"
-	"github.com/ngocanh1909/config"
-	"github.com/ngocanh1909/request"
+	"github.com/ngocanh1909/trainingcyradar/config"
+	"github.com/ngocanh1909/trainingcyradar/request"
 	"regexp"
 	"strings"
 	"time"
