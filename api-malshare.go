@@ -34,7 +34,9 @@ func (mal *MalshareDAO) processGET(c *gin.Context) {
 	date := c.Params.ByName("date")
 	dateParse, err := time.Parse("2006-01-02", date)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, "Error: Date Parse Failed")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"messages" : err.Error(),
+		})
 		return
 	}
 	query := bson.M{
@@ -42,7 +44,9 @@ func (mal *MalshareDAO) processGET(c *gin.Context) {
 	}
 	err = mal.C(collection).Find(query).One(&malshareData)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, "Error: Query Failed")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"messages" : err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
