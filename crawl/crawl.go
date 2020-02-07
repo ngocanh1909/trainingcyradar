@@ -69,7 +69,6 @@ func DumpData(wg *config.WaitGroup) ([]config.MalshareData, error) {
 		wg.Wait.Add(1)
 		go worker(w, jobs, results, wg)
 	}
-	c := 0
 	for {
 		i := strings.Index(bodyStr, magicStr)
 		re := regexp.MustCompile("=\"\\d{4}-\\d{2}-\\d{2}")
@@ -88,10 +87,6 @@ func DumpData(wg *config.WaitGroup) ([]config.MalshareData, error) {
 		t, _ := time.Parse("2006-01-02", dateStr)
 		fmt.Println(t)
 		jobs <- t
-		c++
-		if c >= 100 {
-			break
-		}
 	}
 	close(jobs)
 	wg.Wait.Wait()

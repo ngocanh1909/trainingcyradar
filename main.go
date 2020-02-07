@@ -14,6 +14,7 @@ const (
 	database = "crawl"
 	username = "admin1"
 	password = "admin1"
+	collection = "post"
 )
 
 type Post struct {
@@ -37,5 +38,8 @@ func main() {
 	var hashData []config.MalshareData
 	hashData, err = crawl.DumpData(&config.WaitGroup{})
 	fmt.Println("1")
-	save.SaveFile(session.DB(database), hashData)
+	save.SaveMgo(session.DB(database), hashData)
+	for i:=0; i<len (hashData); i++{
+		save.SaveFile(hashData[i])
+	}
 }

@@ -35,7 +35,11 @@ func (mal *MalshareDAO) processGET(c *gin.Context) {
 	dateParse, err := time.Parse("2006-01-02", date)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"messages" : err.Error(),
+			"messages" : "Date Parse Fail",
+			"date":err.Error(),
+			"md5": err.Error(),
+			"sha1": err.Error(),
+			"sha256": err.Error(),
 		})
 		return
 	}
@@ -45,13 +49,17 @@ func (mal *MalshareDAO) processGET(c *gin.Context) {
 	err = mal.C(collection).Find(query).One(&malshareData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"messages" : err.Error(),
+			"messages" : "Query Fail",
+			"date":err.Error(),
+			"md5": err.Error(),
+			"sha1": err.Error(),
+			"sha256": err.Error(),
 		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
+		"messages": "ok",
 		"date":   dateParse,
-		"status": "ok",
 		"md5":    malshareData.Md5,
 		"sha1":   malshareData.Sha1,
 		"sha256": malshareData.Sha256,
