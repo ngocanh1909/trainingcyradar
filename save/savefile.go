@@ -14,13 +14,13 @@ func SaveFile(data config.MalshareData)  {
 	mm_path := fmt.Sprintf("%s/%s", yyyy_path, mm)
 	dd_path := fmt.Sprintf("%s/%s", mm_path, dd)
 	if _, err := os.Stat(yyyy_path); os.IsNotExist(err) {
-		os.Mkdir(yyyy_path, 777)
+		os.Mkdir(yyyy_path, 0744)
 	}
 	if _, err := os.Stat(mm_path); os.IsNotExist(err) {
-		os.Mkdir(mm_path, 777)
+		os.Mkdir(mm_path, 0744)
 	}
 	if _, err := os.Stat(dd_path); os.IsNotExist(err) {
-		os.Mkdir(dd_path, 777)
+		os.Mkdir(dd_path, 0744)
 	}
 	file, err := os.Create(fmt.Sprintf("%s/md5.txt", dd_path))
 	if err != nil {
