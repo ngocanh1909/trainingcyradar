@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func SaveFile(data config.MalshareData)  {
+func SaveFile(data config.MalshareData) {
 	yyyy := data.Date.Format("2006")
 	mm := data.Date.Format("01")
 	dd := data.Date.Format("02")
