@@ -74,7 +74,7 @@ func main() {
 	}
 	var hashData []config.MalshareData
 	hashData, err = crawl.DumpData(&config.WaitGroup{})
-	wordPtr := flag.String("command", "crawl", "a string")
+	wordPtr := flag.String("command", "file", "go run main.go [-comand=<name>]")
 	flag.Parse()
 	if (*wordPtr == "file") {
 		for i := 0; i < len(hashData); i++ {
