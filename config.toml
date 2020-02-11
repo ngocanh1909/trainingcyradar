@@ -4,6 +4,4 @@ server = "localhost"
 port = "8080"
 database = "crawl"
 collection = "post"
-user = "admin1"
-password = "admin1"
 

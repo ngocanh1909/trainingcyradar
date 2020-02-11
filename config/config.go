@@ -9,6 +9,4 @@ type database1 struct {
 	Port       string
 	Database   string
 	Collection string
-	User       string
-	Password   string
 }
