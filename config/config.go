@@ -9,4 +9,6 @@ type database struct {
 	Port       string
 	Database   string
 	Collection string
+	Username   string
+	Password   string
 }

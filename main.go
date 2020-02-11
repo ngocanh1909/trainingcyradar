@@ -54,7 +54,7 @@ func (mal *MalshareDAO) processGET(c *gin.Context) {
 	})
 }
 
-func (mal *MalshareDAO) setupRouter() *gin.Engine {
+func (mal *MalshareDAO) SetupRouter() *gin.Engine {
 	r := gin.Default()
 	r.GET("/malshare/:date", mal.processGET)
 	return r
@@ -68,8 +68,8 @@ func main() {
 	info := &mgo.DialInfo{
 		Addrs:    []string{config.DB.Server},
 		Database: config.DB.Database,
-		Username: "admin1",
-		Password: "admin1",
+		Username: config.DB.Username,
+		Password: config.DB.Password,
 	}
 	session, err := mgo.DialWithInfo(info)
 	if err != nil {
@@ -77,22 +77,22 @@ func main() {
 	}
 	var hashData [] models.MalshareData
 	hashData, err = crawl.DumpData(&models.WaitGroup{})
-	if err != nil{
+	if err != nil {
 		log.Fatal(err)
 	}
-	choose := flag.String("command", "file", "-command=<name string>")
+	choose := flag.String("command", "file", "-command=<choose>")
 	flag.Parse()
-	if (*choose == "file") {
+	if *choose == "file" {
 		for i := 0; i < len(hashData); i++ {
 			save.SaveFile(hashData[i])
 		}
 	}
-	if (*choose == "mgo") {
+	if *choose == "mgo" {
 		save.SaveMgo(session.DB(config.DB.Database), hashData)
 	}
-	if (*choose == "api") {
+	if *choose == "api" {
 		d := MalshareDAO{session.DB(config.DB.Database)}
-		r := d.setupRouter()
+		r := d.SetupRouter()
 		r.Run(":8080")
 	}
 }
