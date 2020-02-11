@@ -26,7 +26,6 @@ func (mal *MalshareDAO) processGET(c *gin.Context) {
 		fmt.Println(err)
 		return
 	}
-
 	malshareData := models.MalshareData{}
 	date := c.Params.ByName("date")
 	dateParse, err := time.Parse("2006-01-02", date)
@@ -39,7 +38,7 @@ func (mal *MalshareDAO) processGET(c *gin.Context) {
 	query := bson.M{
 		"date": dateParse,
 	}
-	err = mal.db.C(config.Database.Collection).Find(query).One(&malshareData)
+	err = mal.db.C(config.DB.Collection).Find(query).One(&malshareData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"messages": err.Error(),
@@ -67,8 +66,8 @@ func main() {
 		log.Fatal(err)
 	}
 	info := &mgo.DialInfo{
-		Addrs:    []string{config.Database.Server},
-		Database: config.Database.Database,
+		Addrs:    []string{config.DB.Server},
+		Database: config.DB.Database,
 		Username: "admin1",
 		Password: "admin1",
 	}
@@ -78,19 +77,21 @@ func main() {
 	}
 	var hashData [] models.MalshareData
 	hashData, err = crawl.DumpData(&models.WaitGroup{})
-	wordPtr := flag.String("command", "file", "a string")
+	if err != nil{
+		log.Fatal(err)
+	}
+	choose := flag.String("command", "file", "-command=<name string>")
 	flag.Parse()
-	if (*wordPtr == "file") {
+	if (*choose == "file") {
 		for i := 0; i < len(hashData); i++ {
 			save.SaveFile(hashData[i])
 		}
 	}
-	if (*wordPtr == "mgo") {
-		save.SaveMgo(session.DB(config.Database.Database), hashData)
-
+	if (*choose == "mgo") {
+		save.SaveMgo(session.DB(config.DB.Database), hashData)
 	}
-	if (*wordPtr == "api") {
-		d := MalshareDAO{session.DB(config.Database.Database)}
+	if (*choose == "api") {
+		d := MalshareDAO{session.DB(config.DB.Database)}
 		r := d.setupRouter()
 		r.Run(":8080")
 	}

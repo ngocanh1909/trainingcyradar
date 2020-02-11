@@ -1,10 +1,10 @@
 package config
 
 type Config struct {
-	Database database1
+	DB database
 }
 
-type database1 struct {
+type database struct {
 	Server     string
 	Port       string
 	Database   string
