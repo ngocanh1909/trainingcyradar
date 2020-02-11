@@ -69,8 +69,8 @@ func main() {
 	info := &mgo.DialInfo{
 		Addrs:    []string{config.Database.Server},
 		Database: config.Database.Database,
-		Username: config.Database.User,
-		Password: config.Database.Password,
+		Username: "admin1",
+		Password: "admin1",
 	}
 	session, err := mgo.DialWithInfo(info)
 	if err != nil {
