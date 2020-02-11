@@ -2,7 +2,7 @@ package crawl
 
 import (
 	"fmt"
-	"github.com/ngocanh1909/trainingcyradar/config"
+	"github.com/ngocanh1909/trainingcyradar/models"
 	"github.com/ngocanh1909/trainingcyradar/request"
 	"regexp"
 	"strings"
@@ -12,8 +12,8 @@ import (
 const URL = "https://malshare.com/daily/"
 const LIMIT = 100000
 
-func getHash(id int, date time.Time) config.MalshareData {
-	var result config.MalshareData
+func getHash(id int, date time.Time) models.MalshareData {
+	var result models.MalshareData
 	url := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", date.Format("2006-01-02"), date.Format("2006-01-02"))
 	dataStr, err := request.Request(url)
 	if err != nil {
@@ -43,7 +43,7 @@ func getHash(id int, date time.Time) config.MalshareData {
 	return result
 }
 
-func worker(id int, jobs <-chan time.Time, results chan<- config.MalshareData, wg *config.WaitGroup) {
+func worker(id int, jobs <-chan time.Time, results chan<- models.MalshareData, wg *models.WaitGroup) {
 	defer wg.Wait.Done()
 	for j := range jobs {
 		fmt.Printf("worker %d start jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j.Format("2006-01-02"), j.Format("2006-01-02"))
@@ -52,15 +52,15 @@ func worker(id int, jobs <-chan time.Time, results chan<- config.MalshareData, w
 	}
 }
 
-func DumpData(wg *config.WaitGroup) ([]config.MalshareData, error) {
-	var HashArray []config.MalshareData
+func DumpData(wg *models.WaitGroup) ([]models.MalshareData, error) {
+	var HashArray []models.MalshareData
 	bodyStr, err := request.Request(URL)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
 	jobs := make(chan time.Time, LIMIT)
-	results := make(chan config.MalshareData, LIMIT)
+	results := make(chan models.MalshareData, LIMIT)
 	magic := regexp.MustCompile(`\"\[DIR\]\"></[a-z]{2}><[a-z]{2}><a\s[a-z]{4}=\"`)
 	magicStr := string(magic.Find([]byte(bodyStr)))
 	end := regexp.MustCompile("_[a-z]{8}/")
@@ -69,6 +69,7 @@ func DumpData(wg *config.WaitGroup) ([]config.MalshareData, error) {
 		wg.Wait.Add(1)
 		go worker(w, jobs, results, wg)
 	}
+	c:=0
 	for {
 		i := strings.Index(bodyStr, magicStr)
 		re := regexp.MustCompile("=\"\\d{4}-\\d{2}-\\d{2}")
@@ -85,8 +86,11 @@ func DumpData(wg *config.WaitGroup) ([]config.MalshareData, error) {
 			continue
 		}
 		t, _ := time.Parse("2006-01-02", dateStr)
-		fmt.Println(t)
 		jobs <- t
+		c++
+		if c>5{
+			break
+		}
 	}
 	close(jobs)
 	wg.Wait.Wait()

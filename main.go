@@ -1,11 +1,14 @@
 package main
 
 import (
+	"flag"
+	"fmt"
+	"github.com/BurntSushi/toml"
 	"github.com/gin-gonic/gin"
 	"github.com/ngocanh1909/trainingcyradar/config"
 	"github.com/ngocanh1909/trainingcyradar/crawl"
+	"github.com/ngocanh1909/trainingcyradar/models"
 	"github.com/ngocanh1909/trainingcyradar/save"
-	"flag"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"log"
@@ -13,20 +16,18 @@ import (
 	"time"
 )
 
-const (
-	hosts      = "localhost:27017"
-	database   = "crawl"
-	username   = "admin1"
-	password   = "admin1"
-	collection = "post"
-)
-
 type MalshareDAO struct {
-	*mgo.Database
+	db *mgo.Database
 }
 
 func (mal *MalshareDAO) processGET(c *gin.Context) {
-	malshareData := config.MalshareData{}
+	var config config.Config
+	if _, err := toml.DecodeFile("config.toml", &config); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	malshareData := models.MalshareData{}
 	date := c.Params.ByName("date")
 	dateParse, err := time.Parse("2006-01-02", date)
 	if err != nil {
@@ -38,7 +39,7 @@ func (mal *MalshareDAO) processGET(c *gin.Context) {
 	query := bson.M{
 		"date": dateParse,
 	}
-	err = mal.C(collection).Find(query).One(&malshareData)
+	err = mal.db.C(config.Database.Collection).Find(query).One(&malshareData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"messages": err.Error(),
@@ -61,20 +62,23 @@ func (mal *MalshareDAO) setupRouter() *gin.Engine {
 }
 
 func main() {
+	var config config.Config
+	if _, err := toml.DecodeFile("config.toml", &config); err != nil {
+		log.Fatal(err)
+	}
 	info := &mgo.DialInfo{
-		Addrs:    []string{hosts},
-		Timeout:  60 * time.Second,
-		Database: database,
-		Username: username,
-		Password: password,
+		Addrs:    []string{config.Database.Server},
+		Database: config.Database.Database,
+		Username: config.Database.User,
+		Password: config.Database.Password,
 	}
 	session, err := mgo.DialWithInfo(info)
 	if err != nil {
 		log.Fatal(err)
 	}
-	var hashData []config.MalshareData
-	hashData, err = crawl.DumpData(&config.WaitGroup{})
-	wordPtr := flag.String("command", "file", "go run main.go [-comand=<name>]")
+	var hashData [] models.MalshareData
+	hashData, err = crawl.DumpData(&models.WaitGroup{})
+	wordPtr := flag.String("command", "file", "a string")
 	flag.Parse()
 	if (*wordPtr == "file") {
 		for i := 0; i < len(hashData); i++ {
@@ -82,11 +86,11 @@ func main() {
 		}
 	}
 	if (*wordPtr == "mgo") {
-		save.SaveMgo(session.DB(database), hashData)
+		save.SaveMgo(session.DB(config.Database.Database), hashData)
 
 	}
 	if (*wordPtr == "api") {
-		d := MalshareDAO{session.DB(database)}
+		d := MalshareDAO{session.DB(config.Database.Database)}
 		r := d.setupRouter()
 		r.Run(":8080")
 	}

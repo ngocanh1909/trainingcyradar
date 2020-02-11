@@ -17,7 +17,7 @@ func Request(url string) (string, error) {
 		return "", err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 400 {
-		return "", errors.New("Read Body Request Fail")
+		return "", errors.New("Fail Read Body Request")
 	}
 	return string(body), err
 }

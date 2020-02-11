@@ -2,11 +2,11 @@ package save
 
 import (
 	"fmt"
-	"github.com/ngocanh1909/trainingcyradar/config"
+	"github.com/ngocanh1909/trainingcyradar/models"
 	"os"
 )
 
-func SaveFile(data config.MalshareData) {
+func SaveFile(data models.MalshareData) {
 	yyyy := data.Date.Format("2006")
 	mm := data.Date.Format("01")
 	dd := data.Date.Format("02")
