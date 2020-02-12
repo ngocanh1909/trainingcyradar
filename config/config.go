@@ -6,7 +6,6 @@ type Config struct {
 
 type database struct {
 	Server     string
-	Port       string
 	Database   string
 	Collection string
 	Username   string

@@ -84,11 +84,17 @@ func main() {
 	flag.Parse()
 	if *choose == "file" {
 		for i := 0; i < len(hashData); i++ {
-			save.SaveFile(hashData[i])
+			err := save.SaveFile(hashData[i])
+			if err != nil{
+				log.Fatal(err)
+			}
 		}
 	}
 	if *choose == "mgo" {
-		save.SaveMgo(session.DB(config.DB.Database), hashData)
+		err := save.SaveMgo(session.DB(config.DB.Database), hashData)
+		if err != nil{
+			log.Fatal(err)
+		}
 	}
 	if *choose == "api" {
 		d := MalshareDAO{session.DB(config.DB.Database)}
