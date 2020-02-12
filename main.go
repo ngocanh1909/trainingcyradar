@@ -99,6 +99,9 @@ func main() {
 	if *choose == "api" {
 		d := MalshareDAO{session.DB(config.DB.Database)}
 		r := d.SetupRouter()
+		if r != nil{
+			log.Fatal(r)
+		}
 		r.Run(":8080")
 	}
 }
