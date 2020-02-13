@@ -12,11 +12,12 @@ import (
 const URL = "https://malshare.com/daily/"
 const LIMIT = 100000
 
-func getHash(id int, date time.Time) models.MalshareData {
-	var result models.MalshareData
+func getHash(id int, date time.Time) models.Malshare {
+	var result models.Malshare
 	url := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", date.Format("2006-01-02"), date.Format("2006-01-02"))
 	dataStr, err := request.Request(url)
 	if err != nil {
+		err = result.Err
 		return result
 	}
 	var md5 = ""
@@ -36,14 +37,14 @@ func getHash(id int, date time.Time) models.MalshareData {
 		sha1 = fmt.Sprintf("%s %s", sha1, sha1Str)
 		sha256 = fmt.Sprintf("%s %s", sha256, sha256Str)
 	}
-	result.Date = date
-	result.Md5 = md5
-	result.Sha1 = sha1
-	result.Sha256 = sha256
+	result.Mal.Date = date
+	result.Mal.Md5 = md5
+	result.Mal.Sha1 = sha1
+	result.Mal.Sha256 = sha256
 	return result
 }
 
-func worker(id int, jobs <-chan time.Time, results chan<- models.MalshareData, wg *models.WaitGroup) {
+func worker(id int, jobs <-chan time.Time, results chan<- models.Malshare, wg *models.WaitGroup) {
 	defer wg.Wait.Done()
 	for j := range jobs {
 		fmt.Printf("worker %d start jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j.Format("2006-01-02"), j.Format("2006-01-02"))
@@ -60,7 +61,7 @@ func DumpData(wg *models.WaitGroup) ([]models.MalshareData, error) {
 		return nil, err
 	}
 	jobs := make(chan time.Time, LIMIT)
-	results := make(chan models.MalshareData, LIMIT)
+	results := make(chan models.Malshare, LIMIT)
 	magic := regexp.MustCompile(`\"\[DIR\]\"></[a-z]{2}><[a-z]{2}><a\s[a-z]{4}=\"`)
 	magicStr := string(magic.Find([]byte(bodyStr)))
 	end := regexp.MustCompile("_[a-z]{8}/")
@@ -69,7 +70,7 @@ func DumpData(wg *models.WaitGroup) ([]models.MalshareData, error) {
 		wg.Wait.Add(1)
 		go worker(w, jobs, results, wg)
 	}
-	c:=0
+	c := 0
 	for {
 		i := strings.Index(bodyStr, magicStr)
 		re := regexp.MustCompile("=\"\\d{4}-\\d{2}-\\d{2}")
@@ -88,7 +89,7 @@ func DumpData(wg *models.WaitGroup) ([]models.MalshareData, error) {
 		t, _ := time.Parse("2006-01-02", dateStr)
 		jobs <- t
 		c++
-		if c>5{
+		if c > 5 {
 			break
 		}
 	}
@@ -96,7 +97,10 @@ func DumpData(wg *models.WaitGroup) ([]models.MalshareData, error) {
 	wg.Wait.Wait()
 	close(results)
 	for i := range results {
-		HashArray = append(HashArray, i)
+		HashArray = append(HashArray, i.Mal)
+		if (i.Err != nil) {
+			return nil, i.Err
+		}
 	}
 	return HashArray, nil
 }

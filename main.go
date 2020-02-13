@@ -13,6 +13,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -61,16 +62,23 @@ func (mal *MalshareDAO) SetupRouter() *gin.Engine {
 }
 
 func main() {
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(dir)
 	var config config.Config
 	if _, err := toml.DecodeFile("config.toml", &config); err != nil {
 		log.Fatal(err)
 	}
 	info := &mgo.DialInfo{
 		Addrs:    []string{config.DB.Server},
+		Timeout:  60 * time.Second,
 		Database: config.DB.Database,
 		Username: config.DB.Username,
 		Password: config.DB.Password,
 	}
+
 	session, err := mgo.DialWithInfo(info)
 	if err != nil {
 		log.Fatal(err)
@@ -80,27 +88,28 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	choose := flag.String("command", "file", "-command=<choose>")
+	choose := flag.String("command", "mgo", "-command=<choose>")
+
 	flag.Parse()
 	if *choose == "file" {
 		for i := 0; i < len(hashData); i++ {
 			err := save.SaveFile(hashData[i])
-			if err != nil{
+			if err != nil {
 				log.Fatal(err)
 			}
 		}
 	}
 	if *choose == "mgo" {
 		err := save.SaveMgo(session.DB(config.DB.Database), hashData)
-		if err != nil{
+		if err != nil {
 			log.Fatal(err)
 		}
 	}
 	if *choose == "api" {
 		d := MalshareDAO{session.DB(config.DB.Database)}
 		r := d.SetupRouter()
-		err := r.Run(":8080")
-		if err != nil{
+		err = r.Run(":8080")
+		if err != nil {
 			log.Fatal(err)
 		}
 	}

@@ -1,13 +1,11 @@
 package config
 
 type Config struct {
-	DB database
-}
-
-type database struct {
-	Server     string
-	Database   string
-	Collection string
-	Username   string
-	Password   string
+	DB struct {
+		Server     string `toml:"server"`
+		Database   string `toml:"database"`
+		Collection string `toml:"collection"`
+		Username   string `toml:"username"`
+		Password   string `toml:"password"`
+	} `toml:"db"`
 }

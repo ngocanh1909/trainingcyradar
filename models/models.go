@@ -14,6 +14,11 @@ type MalshareData struct {
 	Sha256 string        `json:"sha256" bson:"sha256"`
 }
 
+type Malshare struct {
+	Mal MalshareData
+	Err error
+}
+
 type WaitGroup struct {
 	Wait sync.WaitGroup
 }
