@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/gin-gonic/gin"
 	"github.com/ngocanh1909/trainingcyradar/config"
@@ -22,16 +21,11 @@ type MalshareDAO struct {
 }
 
 func (mal *MalshareDAO) processGET(c *gin.Context) {
-	var config config.Config
-	if _, err := toml.DecodeFile("config.toml", &config); err != nil {
-		fmt.Println(err)
-		return
-	}
 	malshareData := models.MalshareData{}
 	date := c.Params.ByName("date")
 	dateParse, err := time.Parse("2006-01-02", date)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusNotFound, gin.H{
 			"messages": err.Error(),
 		})
 		return
@@ -39,9 +33,9 @@ func (mal *MalshareDAO) processGET(c *gin.Context) {
 	query := bson.M{
 		"date": dateParse,
 	}
-	err = mal.db.C(config.DB.Collection).Find(query).One(&malshareData)
+	err = mal.db.C("post").Find(query).One(&malshareData)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusNotFound, gin.H{
 			"messages": err.Error(),
 		})
 		return
