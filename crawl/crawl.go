@@ -13,8 +13,8 @@ import (
 const URL = "https://malshare.com/daily/"
 const LIMIT = 100000
 
-func getHash(id int, date time.Time) models.Malshare {
-	var result models.Malshare
+func getHash(id int, date time.Time) models.MalshareData {
+	var result models.MalshareData
 	url := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", date.Format("2006-01-02"), date.Format("2006-01-02"))
 	dataStr, err := request.Request(url)
 	if err != nil {
@@ -24,7 +24,6 @@ func getHash(id int, date time.Time) models.Malshare {
 	var md5 = ""
 	var sha1 = ""
 	var sha256 = ""
-	fmt.Printf("Worker ID %d\n", id)
 	for {
 		if len(dataStr) <= 0 {
 			break
@@ -38,14 +37,14 @@ func getHash(id int, date time.Time) models.Malshare {
 		sha1 = fmt.Sprintf("%s %s", sha1, sha1Str)
 		sha256 = fmt.Sprintf("%s %s", sha256, sha256Str)
 	}
-	result.Mal.Date = date
-	result.Mal.Md5 = md5
-	result.Mal.Sha1 = sha1
-	result.Mal.Sha256 = sha256
+	result.Date = date
+	result.Md5 = md5
+	result.Sha1 = sha1
+	result.Sha256 = sha256
 	return result
 }
 
-func worker(id int, jobs <-chan time.Time, results chan<- models.Malshare, wg *sync.WaitGroup) {
+func worker(id int, jobs <-chan time.Time, results chan<- models.MalshareData, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for j := range jobs {
 		fmt.Printf("worker %d start jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j.Format("2006-01-02"), j.Format("2006-01-02"))
@@ -62,7 +61,7 @@ func DumpData(wg *sync.WaitGroup) ([]models.MalshareData, error) {
 		return nil, err
 	}
 	jobs := make(chan time.Time, LIMIT)
-	results := make(chan models.Malshare, LIMIT)
+	results := make(chan models.MalshareData, LIMIT)
 	magic := regexp.MustCompile(`\"\[DIR\]\"></[a-z]{2}><[a-z]{2}><a\s[a-z]{4}=\"`)
 	magicStr := string(magic.Find([]byte(bodyStr)))
 	end := regexp.MustCompile("_[a-z]{8}/")
@@ -86,20 +85,17 @@ func DumpData(wg *sync.WaitGroup) ([]models.MalshareData, error) {
 		if (dateStr == "2019-11-14" || dateStr == "2019-12-01") {
 			continue
 		}
-		t, err := time.Parse("2006-01-02", dateStr)
-		if err != nil {
-			return nil, err
-		}
+		t, _ := time.Parse("2006-01-02", dateStr)
 		jobs <- t
 	}
 	close(jobs)
 	wg.Wait()
 	close(results)
 	for i := range results {
-		HashArray = append(HashArray, i.Mal)
-		if (i.Err != nil) {
+		if i.Err != nil {
 			return nil, i.Err
 		}
+		HashArray = append(HashArray, i)
 	}
 	return HashArray, nil
 }
