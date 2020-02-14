@@ -78,7 +78,6 @@ func main() {
 		Username: config.DB.Username,
 		Password: config.DB.Password,
 	}
-
 	session, err := mgo.DialWithInfo(info)
 	if err != nil {
 		log.Fatal(err)
@@ -89,7 +88,6 @@ func main() {
 		log.Fatal(err)
 	}
 	choose := flag.String("command", "mgo", "-command=<choose>")
-
 	flag.Parse()
 	if *choose == "file" {
 		for i := 0; i < len(hashData); i++ {

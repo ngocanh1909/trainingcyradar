@@ -2,5 +2,5 @@
 server = "localhost"
 database = "crawl"
 collection = "post"
-username = "admin1"
-password = "admin1"
+username = ""
+password = ""
