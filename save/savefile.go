@@ -7,9 +7,7 @@ import (
 )
 
 func SaveFile(data models.MalshareData) (error) {
-	yyyy := data.Date.Year()
-	mm := data.Date.Month()
-	dd, _, _ := data.Date.Date()
+	yyyy, mm, dd := data.Date.Date()
 	yyyy_path := fmt.Sprintf("./%d", yyyy)
 	mm_path := fmt.Sprintf("%s/%d", yyyy_path, mm)
 	dd_path := fmt.Sprintf("%s/%d", mm_path, dd)
