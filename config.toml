@@ -1,7 +1,6 @@
-# filename: config.toml
 [db]
 server = "localhost"
 database = "crawl"
 collection = "post"
-username = ""
-password = ""
+username = "admin1"
+password = "admin1"

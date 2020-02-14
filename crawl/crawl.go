@@ -17,7 +17,7 @@ func getHash(id int, date time.Time) models.Malshare {
 	url := fmt.Sprintf("https://malshare.com/daily/%s/malshare_fileList.%s.all.txt", date.Format("2006-01-02"), date.Format("2006-01-02"))
 	dataStr, err := request.Request(url)
 	if err != nil {
-		err = result.Err
+		result.Err = err
 		return result
 	}
 	var md5 = ""
@@ -32,7 +32,7 @@ func getHash(id int, date time.Time) models.Malshare {
 		sha1Str := dataStr[33:73]
 		sha256Str := dataStr[74:138]
 		i := strings.Index(dataStr, "\n")
-		dataStr = dataStr[i+1 : len(dataStr)]
+		dataStr = dataStr[i+1:]
 		md5 = fmt.Sprintf("%s %s", md5, md5Str)
 		sha1 = fmt.Sprintf("%s %s", sha1, sha1Str)
 		sha256 = fmt.Sprintf("%s %s", sha256, sha256Str)
@@ -79,7 +79,7 @@ func DumpData(wg *models.WaitGroup) ([]models.MalshareData, error) {
 			break
 		}
 		dateStr := string(out)[2:]
-		bodyStr = bodyStr[i+len(magicStr)+1 : len(bodyStr)]
+		bodyStr = bodyStr[i+len(magicStr)+1:]
 		if dateStr == outEnd {
 			break
 		}

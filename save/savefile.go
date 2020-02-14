@@ -36,14 +36,20 @@ func SaveFile(data models.MalshareData) (error) {
 		return err
 	}
 	for i := 0; i < len(data.Md5); i++ {
-		file.WriteString(data.Md5)
+		_, err = file.WriteString(data.Md5)
+		if err != nil {
+			return err
+		}
 	}
 	file, err = os.Create(fmt.Sprintf("%s/sha1.txt", dd_path))
 	if err != nil {
 		return err
 	}
 	for i := 0; i < len(data.Sha1); i++ {
-		file.WriteString(data.Sha1)
+		_, err = file.WriteString(data.Sha1)
+		if err != nil {
+			return err
+		}
 	}
 	file.Close()
 	file, err = os.Create(fmt.Sprintf("%s/sha256.txt", dd_path))
@@ -51,7 +57,10 @@ func SaveFile(data models.MalshareData) (error) {
 		return err
 	}
 	for i := 0; i < len(data.Sha256); i++ {
-		file.WriteString(data.Sha256)
+		_, err = file.WriteString(data.Sha256)
+		if err != nil {
+			return err
+		}
 	}
 	file.Close()
 	return nil
