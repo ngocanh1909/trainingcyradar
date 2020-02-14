@@ -2,7 +2,6 @@ package models
 
 import (
 	"gopkg.in/mgo.v2/bson"
-	"sync"
 	"time"
 )
 
@@ -19,6 +18,3 @@ type Malshare struct {
 	Err error
 }
 
-type WaitGroup struct {
-	Wait sync.WaitGroup
-}

@@ -13,7 +13,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	"log"
 	"net/http"
-	"os"
+	"sync"
 	"time"
 )
 
@@ -62,11 +62,21 @@ func (mal *MalshareDAO) SetupRouter() *gin.Engine {
 }
 
 func main() {
-	dir, err := os.Getwd()
+	var hashData [] models.MalshareData
+	hashData, err := crawl.DumpData(&sync.WaitGroup{})
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(dir)
+	choose := flag.String("command", "mgo", "-command=<choose>")
+	flag.Parse()
+	if *choose == "file" {
+		for i := 0; i < len(hashData); i++ {
+			err := save.SaveFile(hashData[i])
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
 	var config config.Config
 	if _, err := toml.DecodeFile("config.toml", &config); err != nil {
 		log.Fatal(err)
@@ -81,21 +91,6 @@ func main() {
 	session, err := mgo.DialWithInfo(info)
 	if err != nil {
 		log.Fatal(err)
-	}
-	var hashData [] models.MalshareData
-	hashData, err = crawl.DumpData(&models.WaitGroup{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	choose := flag.String("command", "mgo", "-command=<choose>")
-	flag.Parse()
-	if *choose == "file" {
-		for i := 0; i < len(hashData); i++ {
-			err := save.SaveFile(hashData[i])
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
 	}
 	if *choose == "mgo" {
 		err := save.SaveMgo(session.DB(config.DB.Database), hashData)

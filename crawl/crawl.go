@@ -6,6 +6,7 @@ import (
 	"github.com/ngocanh1909/trainingcyradar/request"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -44,8 +45,8 @@ func getHash(id int, date time.Time) models.Malshare {
 	return result
 }
 
-func worker(id int, jobs <-chan time.Time, results chan<- models.Malshare, wg *models.WaitGroup) {
-	defer wg.Wait.Done()
+func worker(id int, jobs <-chan time.Time, results chan<- models.Malshare, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for j := range jobs {
 		fmt.Printf("worker %d start jobs http://malshare.com/daily/%s/malshare_fileList.%s.all.txt \n", id, j.Format("2006-01-02"), j.Format("2006-01-02"))
 		results <- getHash(id, j)
@@ -53,7 +54,7 @@ func worker(id int, jobs <-chan time.Time, results chan<- models.Malshare, wg *m
 	}
 }
 
-func DumpData(wg *models.WaitGroup) ([]models.MalshareData, error) {
+func DumpData(wg *sync.WaitGroup) ([]models.MalshareData, error) {
 	var HashArray []models.MalshareData
 	bodyStr, err := request.Request(URL)
 	if err != nil {
@@ -67,10 +68,9 @@ func DumpData(wg *models.WaitGroup) ([]models.MalshareData, error) {
 	end := regexp.MustCompile("_[a-z]{8}/")
 	outEnd := string(end.Find([]byte(bodyStr)))
 	for w := 1; w < 101; w++ {
-		wg.Wait.Add(1)
+		wg.Add(1)
 		go worker(w, jobs, results, wg)
 	}
-	c := 0
 	for {
 		i := strings.Index(bodyStr, magicStr)
 		re := regexp.MustCompile("=\"\\d{4}-\\d{2}-\\d{2}")
@@ -86,15 +86,14 @@ func DumpData(wg *models.WaitGroup) ([]models.MalshareData, error) {
 		if (dateStr == "2019-11-14" || dateStr == "2019-12-01") {
 			continue
 		}
-		t, _ := time.Parse("2006-01-02", dateStr)
-		jobs <- t
-		c++
-		if c > 5 {
-			break
+		t, err := time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			return nil, err
 		}
+		jobs <- t
 	}
 	close(jobs)
-	wg.Wait.Wait()
+	wg.Wait()
 	close(results)
 	for i := range results {
 		HashArray = append(HashArray, i.Mal)
