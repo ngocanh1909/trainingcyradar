@@ -8,28 +8,28 @@ import (
 
 func SaveFile(data models.MalshareData) (error) {
 	yyyy, mm, dd := data.Date.Date()
-	yyyy_path := fmt.Sprintf("./%d", yyyy)
-	mm_path := fmt.Sprintf("%s/%d", yyyy_path, mm)
-	dd_path := fmt.Sprintf("%s/%d", mm_path, dd)
-	if _, err := os.Stat(yyyy_path); os.IsNotExist(err) {
-		err := os.Mkdir(yyyy_path, 0744)
+	yyyyPath := fmt.Sprintf("./%d", yyyy)
+	mmPath := fmt.Sprintf("%s/%d", yyyyPath, mm)
+	ddPath := fmt.Sprintf("%s/%d", mmPath, dd)
+	if _, err := os.Stat(yyyyPath); os.IsNotExist(err) {
+		err := os.Mkdir(yyyyPath, 0744)
 		if err != nil {
 			return err
 		}
 	}
-	if _, err := os.Stat(mm_path); os.IsNotExist(err) {
-		err := os.Mkdir(mm_path, 0744)
+	if _, err := os.Stat(mmPath); os.IsNotExist(err) {
+		err := os.Mkdir(mmPath, 0744)
 		if err != nil {
 			return err
 		}
 	}
-	if _, err := os.Stat(dd_path); os.IsNotExist(err) {
-		err := os.Mkdir(dd_path, 0744)
+	if _, err := os.Stat(ddPath); os.IsNotExist(err) {
+		err := os.Mkdir(ddPath, 0744)
 		if err != nil {
 			return err
 		}
 	}
-	file, err := os.Create(fmt.Sprintf("%s/md5.txt", dd_path))
+	file, err := os.Create(fmt.Sprintf("%s/md5.txt", ddPath))
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func SaveFile(data models.MalshareData) (error) {
 	if err != nil {
 		return err
 	}
-	file, err = os.Create(fmt.Sprintf("%s/sha1.txt", dd_path))
+	file, err = os.Create(fmt.Sprintf("%s/sha1.txt", ddPath))
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func SaveFile(data models.MalshareData) (error) {
 		return err
 	}
 	file.Close()
-	file, err = os.Create(fmt.Sprintf("%s/sha256.txt", dd_path))
+	file, err = os.Create(fmt.Sprintf("%s/sha256.txt", ddPath))
 	if err != nil {
 		return err
 	}

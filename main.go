@@ -25,7 +25,7 @@ func (mal *MalshareDAO) processGET(c *gin.Context) {
 	date := c.Params.ByName("date")
 	dateParse, err := time.Parse("2006-01-02", date)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
+		c.JSON(http.StatusUnprocessableEntity, gin.H{
 			"messages": err.Error(),
 		})
 		return
@@ -35,7 +35,7 @@ func (mal *MalshareDAO) processGET(c *gin.Context) {
 	}
 	err = mal.db.C("post").Find(query).One(&malshareData)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"messages": err.Error(),
 		})
 		return
@@ -95,7 +95,7 @@ func main() {
 	if *choose == "api" {
 		d := MalshareDAO{session.DB(config.DB.Database)}
 		r := d.SetupRouter()
-		err = r.Run(":8080")
+		err = r.Run(config.DB.Port)
 		if err != nil {
 			log.Fatal(err)
 		}
